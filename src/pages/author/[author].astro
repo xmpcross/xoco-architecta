@@ -1,0 +1,74 @@
+---
+import { getCollection } from "astro:content";
+import NewsletterSignup from "@/components/NewsletterSignup.astro";
+import PostCard from "@/components/PostCard.astro";
+import SiteFooter from "@/components/SiteFooter.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import Avatar from "@/components/ui/Avatar.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { siteConfig } from "@/config/site";
+import { getAllAuthors, isByAuthor, visiblePosts, type Post } from "@/lib/posts";
+
+export async function getStaticPaths() {
+  const allPosts = visiblePosts(await getCollection("posts"));
+  return getAllAuthors(allPosts).map((author) => ({
+    params: { author: author.slug },
+    props: { author, allPosts },
+  }));
+}
+
+interface Props {
+  author: { slug: string; name: string; role: string; posts: Post[] };
+  allPosts: Post[];
+}
+
+const { author, allPosts } = Astro.props;
+/** Includes the posts this author coauthored, not only the ones they lead. */
+const posts = visiblePosts(allPosts).filter((post) => isByAuthor(post, author.slug));
+const title = `${author.name} articles`;
+const description = `Articles by ${author.name}, ${author.role}, on ${siteConfig.name}.`;
+---
+
+<BaseLayout title={title} description={description}>
+  <SiteHeader posts={allPosts} />
+  <main id="content">
+    <div class="container">
+      <header class="author-hero">
+        <Avatar name={author.name} size="xl" />
+        <div class="author-hero__body">
+          <h1 class="txt-h1">{author.name}</h1>
+          <p class="txt-l txt-dim">{author.role}</p>
+          <p class="txt-xs txt-dim">
+            {posts.length} {posts.length === 1 ? "article" : "articles"}
+          </p>
+        </div>
+      </header>
+    </div>
+
+    <section class="container section section-top">
+      <div class="grid-cards grid-cards--3">
+        {posts.map((post, index) => <PostCard post={post} headingLevel="h2" eager={index < 3} />)}
+      </div>
+    </section>
+
+    <NewsletterSignup id="author-newsletter" />
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .author-hero {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-block: 3rem 2.5rem;
+  }
+
+  .author-hero__body {
+    display: grid;
+    gap: 0.75rem;
+    justify-items: start;
+    min-width: 0;
+  }
+</style>

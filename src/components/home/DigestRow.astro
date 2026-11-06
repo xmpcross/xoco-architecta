@@ -1,0 +1,35 @@
+---
+import { bylineText, formatDate, postHref, type Post } from "@/lib/posts";
+
+/**
+ * A ruled row of short items — an issue contents list. Designed for four
+ * posts, which is what the hairline column rules are set out for; more will
+ * wrap into further rows and still rule correctly.
+ */
+interface Props {
+  posts: Post[];
+  label: string;
+}
+
+const { posts, label } = Astro.props;
+---
+
+{
+  posts.length > 0 && (
+    <ul class="digest" aria-label={label}>
+      {posts.map((post) => (
+        <li class="digest__item">
+          <span class="txt-mono txt-dim">{post.data.category}</span>
+          <h3 class="txt-h5 digest__title">
+            <a href={postHref(post)}>{post.data.title}</a>
+          </h3>
+          <p class="txt-cap txt-dim">
+            <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+            {" — "}
+            {bylineText(post)}
+          </p>
+        </li>
+      ))}
+    </ul>
+  )
+}

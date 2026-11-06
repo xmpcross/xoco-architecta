@@ -1,0 +1,890 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import SwapText from "@/components/ui/SwapText.astro";
+import { primaryNavigation, siteConfig } from "@/config/site";
+import {
+  formatDate,
+  postBylines,
+  postHref,
+  storyLayoutExamples,
+  visiblePosts,
+  type Post,
+} from "@/lib/posts";
+import { socialIconFor } from "@/lib/socials";
+
+interface Props {
+  posts: Post[];
+  /**
+   * Lifts the bar onto the page's opening photograph: no background, light type,
+   * and out of the flow so the picture can start at the first pixel. Set by the
+   * immersive article opening.
+   */
+  overlay?: boolean;
+}
+
+const { overlay = false } = Astro.props;
+const currentPath = Astro.url.pathname;
+const allPosts = visiblePosts(Astro.props.posts);
+const searchItems = allPosts.slice(0, 8);
+const isCurrentPath = (href: string) =>
+  currentPath === href || (href !== "/" && currentPath.startsWith(href));
+
+/**
+ * The bar's own copy of the navigation. The story-layout preview menu is built
+ * here rather than in `site.ts` because it reads the archive: one post per
+ * article opening treatment. `siteConfig.storyLayoutMenu` switches it off, and
+ * `site.ts` gives its slot back to a fourth inline section when it does.
+ */
+const storyLayoutLinks = siteConfig.storyLayoutMenu ? storyLayoutExamples(allPosts) : [];
+const navigation =
+  storyLayoutLinks.length > 0
+    ? [
+        ...primaryNavigation,
+        {
+          label: "Layouts",
+          /* The trigger has to be a real link to stay keyboard-reachable, so it
+             opens the first example; the menu under it carries all four. */
+          href: storyLayoutLinks[0].href,
+          children: storyLayoutLinks,
+        },
+      ]
+    : primaryNavigation;
+
+/** Pages that only the mobile menu surfaces, folded into its first submenu. */
+const mobileSecondaryLinks = [{ label: "About", href: "/about/" }];
+const mobileSecondaryIndex = navigation.findIndex((item) => item.children);
+---
+
+<header class:list={["site-header", overlay && "site-header--overlay"]}>
+  <div class="container site-header__inner">
+    <a href="/" class="wordmark" aria-label={`${siteConfig.name} home`}>{siteConfig.name}</a>
+
+    <nav class="nav" aria-label="Primary">
+      {
+        navigation.map((item) =>
+          item.children ? (
+            <div class="nav__parent">
+              <a
+                class="nav__item"
+                href={item.href}
+                aria-current={isCurrentPath(item.href) ? "page" : undefined}
+              >
+                <SwapText text={item.label} />
+                <Icon name="caret-down" size={13} />
+              </a>
+              <div class="nav__submenu">
+                {item.children.map((child) => (
+                  <a class="nav__sublink" href={child.href}>
+                    <SwapText text={child.label} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <a
+              class="nav__item"
+              href={item.href}
+              aria-current={isCurrentPath(item.href) ? "page" : undefined}
+            >
+              <SwapText text={item.label} />
+            </a>
+          ),
+        )
+      }
+    </nav>
+
+    <div class="header-actions">
+      <a
+        href="/search/"
+        class="icon-btn"
+        aria-label="Search articles"
+        aria-haspopup="dialog"
+        aria-controls="site-search-dialog"
+        data-search-toggle
+      >
+        <Icon name="search" />
+      </a>
+      <button type="button" class="icon-btn theme-toggle" data-theme-toggle aria-label="Switch color theme">
+        <Icon name="sun" class="theme-icon-sun" />
+        <Icon name="moon" class="theme-icon-moon" />
+      </button>
+      <a href="/#newsletter" class="btn header-subscribe">
+        <SwapText text="Subscribe" />
+      </a>
+      <button
+        type="button"
+        class="icon-btn header-menu"
+        aria-controls="mobile-menu-panel"
+        aria-expanded="false"
+        data-mobile-menu-toggle
+      >
+        <Icon name="menu" size={18} />
+        <span class="sr-only">Open navigation menu</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<dialog
+  id="site-search-dialog"
+  class="search-dialog"
+  aria-labelledby="site-search-title"
+  aria-describedby="site-search-description"
+  data-search-dialog
+>
+  <div class="search-command">
+    <form action="/search/" method="get" role="search" aria-label="Site search" data-search-form>
+      <div class="search-command-field">
+        <Icon name="search" size={20} class="search-command-icon" />
+        <div class="min-w-0 flex-1">
+          <h2 id="site-search-title" class="sr-only">Search {siteConfig.name}</h2>
+          <label class="sr-only" for="site-search-input">Search articles</label>
+          <input
+            id="site-search-input"
+            name="q"
+            type="search"
+            class="search-command-input"
+            placeholder="Search articles, topics, authors…"
+            autocomplete="off"
+            enterkeyhint="search"
+            data-search-input
+          />
+        </div>
+        <button type="button" class="icon-btn" aria-label="Close search" data-search-close>
+          <Icon name="close" size={18} />
+        </button>
+      </div>
+
+      <div class="search-command-body">
+        <p
+          id="site-search-description"
+          class="txt-mono txt-dim search-command-summary"
+          data-search-summary
+          aria-live="polite"
+        >
+        </p>
+        <div class="search-command-results" data-search-results></div>
+      </div>
+
+      <div class="search-command-footer" aria-hidden="true">
+        <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+        <span><kbd>↵</kbd> Open</span>
+        <span class="ml-auto hidden sm:inline">Search all with Enter</span>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<div
+  id="mobile-menu-panel"
+  class="mobile-menu"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Navigation menu"
+  hidden
+>
+  <div class="container mobile-menu__bar">
+    <a href="/" class="wordmark" aria-label={`${siteConfig.name} home`}>{siteConfig.name}</a>
+    <button type="button" class="icon-btn" data-mobile-menu-close aria-label="Close navigation menu">
+      <Icon name="close" size={18} />
+    </button>
+  </div>
+
+  <nav class="container mobile-menu__nav" aria-label="Mobile">
+    <ul class="mobile-nav">
+      {
+        navigation.map((item, index) =>
+          item.children ? (
+            <li class="mobile-nav__group">
+              <button
+                type="button"
+                class="mobile-nav__item mobile-nav__toggle"
+                aria-expanded="false"
+                aria-controls={`mobile-submenu-${index}`}
+                data-mobile-submenu-toggle
+              >
+                {item.label}
+                <Icon name="caret-down" size={18} class="mobile-nav__chevron" />
+              </button>
+              <ul class="mobile-nav__submenu" id={`mobile-submenu-${index}`} hidden>
+                {[
+                  ...item.children,
+                  ...(index === mobileSecondaryIndex ? mobileSecondaryLinks : []),
+                ].map((child) => (
+                  <li>
+                    <a
+                      class="mobile-nav__sublink"
+                      href={child.href}
+                      aria-current={isCurrentPath(child.href) ? "page" : undefined}
+                    >
+                      <SwapText text={child.label} />
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ) : (
+            <li>
+              <a
+                class="mobile-nav__item"
+                href={item.href}
+                aria-current={isCurrentPath(item.href) ? "page" : undefined}
+              >
+                {item.label}
+              </a>
+            </li>
+          ),
+        )
+      }
+    </ul>
+    <a class="btn btn--lg mobile-menu__cta" href="/#newsletter">Subscribe</a>
+    <ul class="mobile-menu__socials">
+      {
+        siteConfig.socials.map((item) => (
+          <li>
+            <a
+              href={item.href}
+              class="icon-btn"
+              aria-label={item.label}
+              rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+            >
+              <Icon name={socialIconFor(item.label)} size={18} />
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </nav>
+</div>
+
+<script is:inline type="application/json" id="site-search-fallback" set:html={JSON.stringify(searchItems.map((post) => ({
+  title: post.data.title,
+  excerpt: post.data.excerpt,
+  href: postHref(post),
+  category: post.data.category,
+  bylines: postBylines(post).map((byline) => ({ name: byline.name })),
+  date: formatDate(post.data.date),
+})))} />
+
+<script is:inline>
+  (() => {
+  const searchDialog = document.querySelector("[data-search-dialog]");
+  const searchToggle = document.querySelector("[data-search-toggle]");
+  const searchClose = searchDialog?.querySelector("[data-search-close]");
+  const searchInput = searchDialog?.querySelector("[data-search-input]");
+  const searchResults = searchDialog?.querySelector("[data-search-results]");
+  const searchSummary = searchDialog?.querySelector("[data-search-summary]");
+  let siteSearchData = [];
+  let siteSearchDataPromise;
+
+  const siteSearchFallback = JSON.parse(document.getElementById("site-search-fallback")?.textContent || "[]");
+
+  const loadSearchData = async () => {
+    if (siteSearchData.length > 0) return siteSearchData;
+
+    siteSearchDataPromise ??= fetch("/search-index.json")
+      .then((response) => {
+        if (!response.ok) throw new Error("Search index unavailable");
+        return response.json();
+      })
+      .then((items) => {
+        siteSearchData = Array.isArray(items) ? items : siteSearchFallback;
+        return siteSearchData;
+      })
+      .catch(() => {
+        siteSearchData = siteSearchFallback;
+        return siteSearchData;
+      });
+
+    return siteSearchDataPromise;
+  };
+
+  const escapeHtml = (value) =>
+    String(value).replace(/[&<>"']/g, (character) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    })[character]);
+
+  const rankSearchItem = (item, query) => {
+    const title = item.title.toLowerCase();
+    const category = item.category.toLowerCase();
+    const tags = (item.tags || []).join(" ").toLowerCase();
+    const bylineNames = (item.bylines || []).map((byline) => byline.name);
+    const supportingText = [item.excerpt, ...bylineNames].join(" ").toLowerCase();
+
+    if (title.startsWith(query)) return 0;
+    if (title.includes(query)) return 1;
+    if (`${category} ${tags}`.includes(query)) return 2;
+    if (supportingText.includes(query)) return 3;
+    return Number.POSITIVE_INFINITY;
+  };
+
+  const searchResultMarkup = (item) => `
+    <a href="${escapeHtml(item.href)}" class="search-result">
+      <span class="search-result-copy">
+        <span class="search-result-title">${escapeHtml(item.title)}</span>
+        <span class="search-result-meta">
+          <span>${escapeHtml(item.category)}</span>
+          <span aria-hidden="true">·</span>
+          <span>${escapeHtml(item.date)}</span>
+        </span>
+      </span>
+      <svg aria-hidden="true" class="search-result-arrow" viewBox="0 0 24 24" fill="none">
+        <path d="M5 12h14m-5-5 5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    </a>
+  `;
+
+  const renderSearchResults = async () => {
+    if (!searchInput || !searchResults || !searchSummary) return;
+
+    const rawQuery = searchInput.value.trim();
+    const query = rawQuery.toLowerCase();
+
+    // Nothing typed, nothing shown: the palette opens as an empty field rather
+    // than as a list of articles nobody asked for.
+    if (!query) {
+      searchSummary.textContent = "";
+      searchResults.innerHTML = "";
+      return;
+    }
+
+    const items = await loadSearchData();
+    if (searchInput.value.trim().toLowerCase() !== query) return;
+
+    const matches = items
+      .map((item) => ({ item, rank: rankSearchItem(item, query) }))
+      .filter(({ rank }) => Number.isFinite(rank))
+      .sort((a, b) => a.rank - b.rank)
+      .slice(0, 7)
+      .map(({ item }) => item);
+
+    searchSummary.textContent = `${matches.length} ${matches.length === 1 ? "result" : "results"} for “${rawQuery}”`;
+
+    if (matches.length === 0) {
+      searchResults.innerHTML = `
+        <div class="search-empty">
+          <span class="search-empty-icon" aria-hidden="true">?</span>
+          <div>
+            <p class="txt-sub">No articles found</p>
+            <p class="txt-xs txt-dim">Try a title, topic, tag, or author.</p>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    searchResults.innerHTML = matches.map(searchResultMarkup).join("");
+  };
+
+  const openSearch = () => {
+    if (!searchDialog || !searchInput || typeof searchDialog.showModal !== "function") return;
+    if (!searchDialog.open) searchDialog.showModal();
+    document.documentElement.classList.add("has-open-search");
+    void renderSearchResults();
+    window.requestAnimationFrame(() => searchInput.focus());
+  };
+
+  const closeSearch = () => {
+    if (searchDialog?.open) searchDialog.close();
+  };
+
+  searchToggle?.addEventListener("click", (event) => {
+    if (!searchDialog || typeof searchDialog.showModal !== "function") return;
+    event.preventDefault();
+    openSearch();
+  });
+
+  searchClose?.addEventListener("click", closeSearch);
+
+  searchDialog?.addEventListener("close", () => {
+    document.documentElement.classList.remove("has-open-search");
+    searchToggle?.focus();
+  });
+
+  searchDialog?.addEventListener("click", (event) => {
+    if (event.target === searchDialog) closeSearch();
+  });
+
+  searchInput?.addEventListener("input", () => {
+    void renderSearchResults();
+  });
+
+  searchInput?.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowDown") return;
+    const firstResult = searchResults?.querySelector("a");
+    if (!firstResult) return;
+    event.preventDefault();
+    firstResult.focus();
+  });
+
+  searchResults?.addEventListener("keydown", (event) => {
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+
+    const links = Array.from(searchResults.querySelectorAll("a"));
+    const currentIndex = links.indexOf(document.activeElement);
+    if (currentIndex === -1) return;
+
+    event.preventDefault();
+    if (event.key === "ArrowDown") {
+      (links[currentIndex + 1] || links[0])?.focus();
+    } else if (currentIndex === 0) {
+      searchInput?.focus();
+    } else {
+      links[currentIndex - 1]?.focus();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const target = event.target;
+    const isEditing =
+      target instanceof HTMLElement &&
+      (target.matches("input, textarea, select") || target.isContentEditable);
+    const isCommandShortcut = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k";
+    const isSlashShortcut = event.key === "/" && !isEditing && !event.metaKey && !event.ctrlKey && !event.altKey;
+
+    if (!isCommandShortcut && !isSlashShortcut) return;
+    event.preventDefault();
+
+    if (searchDialog?.open && isCommandShortcut) closeSearch();
+    else openSearch();
+  });
+
+  const siteHeader = document.querySelector(".site-header");
+
+  if (siteHeader) {
+    let scrollTicking = false;
+    let lastScrollY = window.scrollY;
+
+    const updateHeaderScrolled = () => {
+      const currentScrollY = window.scrollY;
+
+      siteHeader.classList.toggle("is-scrolled", currentScrollY > 8);
+
+      if (currentScrollY <= 8) {
+        siteHeader.classList.remove("is-hidden");
+      } else if (currentScrollY > lastScrollY) {
+        siteHeader.classList.add("is-hidden");
+      } else if (currentScrollY < lastScrollY) {
+        siteHeader.classList.remove("is-hidden");
+      }
+
+      lastScrollY = currentScrollY;
+      scrollTicking = false;
+    };
+
+    updateHeaderScrolled();
+
+    window.addEventListener(
+      "scroll",
+      () => {
+        if (scrollTicking) return;
+        scrollTicking = true;
+        window.requestAnimationFrame(updateHeaderScrolled);
+      },
+      { passive: true },
+    );
+  }
+
+  const mobileMenuButton = document.querySelector("[data-mobile-menu-toggle]");
+  const mobileMenuPanel = document.getElementById("mobile-menu-panel");
+
+  if (mobileMenuButton && mobileMenuPanel) {
+    const mobileMenuClose = mobileMenuPanel.querySelector("[data-mobile-menu-close]");
+    const mobileMenuFirstLink = mobileMenuPanel.querySelector("a");
+    const desktopMedia = window.matchMedia("(min-width: 64rem)");
+    const focusableSelector =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    let inertedElements = [];
+
+    const submenuToggles = Array.from(mobileMenuPanel.querySelectorAll("[data-mobile-submenu-toggle]"));
+
+    const setSubmenuOpen = (toggle, open) => {
+      const submenu = document.getElementById(toggle.getAttribute("aria-controls"));
+      if (!submenu) return;
+      toggle.setAttribute("aria-expanded", String(open));
+      submenu.hidden = !open;
+    };
+
+    submenuToggles.forEach((toggle) => {
+      toggle.addEventListener("click", () => {
+        setSubmenuOpen(toggle, toggle.getAttribute("aria-expanded") !== "true");
+      });
+    });
+
+    const setMenuOpen = (open) => {
+      mobileMenuPanel.hidden = !open;
+      mobileMenuButton.setAttribute("aria-expanded", String(open));
+      document.documentElement.classList.toggle("has-open-menu", open);
+
+      if (open) {
+        inertedElements = Array.from(document.body.children).filter(
+          (element) => element !== mobileMenuPanel && !element.inert,
+        );
+        inertedElements.forEach((element) => {
+          element.inert = true;
+        });
+
+        window.requestAnimationFrame(() => {
+          (mobileMenuClose || mobileMenuFirstLink)?.focus();
+        });
+      } else {
+        inertedElements.forEach((element) => {
+          element.inert = false;
+        });
+        inertedElements = [];
+        submenuToggles.forEach((toggle) => setSubmenuOpen(toggle, false));
+      }
+    };
+
+    mobileMenuButton.addEventListener("click", () => {
+      setMenuOpen(mobileMenuButton.getAttribute("aria-expanded") !== "true");
+    });
+
+    mobileMenuPanel.querySelectorAll("a").forEach((link) => {
+      link.addEventListener("click", () => setMenuOpen(false));
+    });
+
+    mobileMenuClose?.addEventListener("click", () => {
+      setMenuOpen(false);
+      mobileMenuButton.focus();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (mobileMenuPanel.hidden) return;
+
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+        mobileMenuButton.focus();
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+
+      const focusableElements = Array.from(mobileMenuPanel.querySelectorAll(focusableSelector)).filter(
+        (element) => element.offsetParent !== null,
+      );
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements.at(-1);
+      if (!firstElement || !lastElement) return;
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
+      }
+    });
+
+    desktopMedia.addEventListener("change", (event) => {
+      if (event.matches && !mobileMenuPanel.hidden) setMenuOpen(false);
+    });
+  }
+  })();
+</script>
+
+<style>
+  .header-subscribe {
+    display: none;
+  }
+
+  .header-menu {
+    display: inline-grid;
+  }
+
+  @media (min-width: 64rem) {
+    .header-subscribe {
+      display: inline-flex;
+      margin-left: 0.5rem;
+    }
+
+    .header-menu {
+      display: none;
+    }
+  }
+
+  .mobile-menu__bar {
+    display: flex;
+    height: var(--header-height);
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mobile-menu__nav {
+    padding-block: 1rem 2rem;
+  }
+
+  .mobile-menu__cta {
+    width: 100%;
+    margin-top: 1.5rem;
+  }
+
+  .mobile-menu__socials {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  /* Command palette --------------------------------------------------- */
+
+  .search-dialog {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    overflow-y: auto;
+    color: var(--foreground);
+    border: 0;
+    background: transparent;
+    padding: clamp(0.75rem, 9vh, 6rem) 1rem 1rem;
+  }
+
+  .search-dialog[open] {
+    display: grid;
+    grid-template-columns: minmax(0, 40rem);
+    align-items: start;
+    justify-content: center;
+  }
+
+  .search-dialog::backdrop {
+    background: rgb(0 0 0 / 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .search-command {
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-block);
+    background: var(--card);
+    box-shadow: 0 30px 80px rgb(0 0 0 / 0.28);
+  }
+
+  .search-dialog[open] .search-command {
+    animation: search-command-in 200ms var(--ease-out);
+  }
+
+  .search-command-field {
+    display: flex;
+    min-height: 4rem;
+    align-items: center;
+    gap: 0.75rem;
+    border-bottom: 1px solid var(--border);
+    padding-inline: 1.125rem;
+  }
+
+  .search-command-icon {
+    flex: 0 0 auto;
+    color: var(--accent);
+  }
+
+  .search-command-input {
+    width: 100%;
+    height: 4rem;
+    border: 0;
+    background: transparent;
+    color: var(--foreground);
+    outline: none;
+    padding: 0;
+    font-size: var(--fs-l);
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+
+  .search-command-input::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  .search-command-input::-webkit-search-cancel-button {
+    display: none;
+    appearance: none;
+  }
+
+  .search-command-body {
+    max-height: min(60vh, 28rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 0.75rem;
+  }
+
+  /* Before anything is typed both children are empty, so the body gives up its
+     padding and the dialog is the field and the shortcut row, nothing else. */
+  .search-command-body:not(:has(*:not(:empty))) {
+    padding: 0;
+  }
+
+  /* Collapses entirely until there is a query, so the palette opens as a
+     field and nothing else. */
+  .search-command-summary {
+    padding: 0 0.5rem 0.625rem;
+  }
+
+  .search-command-summary:empty {
+    display: none;
+  }
+
+  .search-command-results {
+    display: grid;
+    gap: 0.125rem;
+  }
+
+  :global(.search-result) {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-radius: var(--radius-control);
+    padding: 0.75rem 0.875rem;
+    color: var(--foreground);
+    transition: background-color 0.18s ease;
+  }
+
+  :global(.search-result:hover),
+  :global(.search-result:focus-visible) {
+    background: var(--muted);
+    outline: none;
+  }
+
+  :global(.search-result-copy) {
+    min-width: 0;
+  }
+
+  :global(.search-result-title) {
+    display: block;
+    overflow: hidden;
+    font-size: var(--fs-s);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.35;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  :global(.search-result-meta) {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.25rem;
+    color: var(--muted-foreground);
+    font-size: var(--fs-cap);
+  }
+
+  :global(.search-result-arrow) {
+    width: 1rem;
+    height: 1rem;
+    flex: 0 0 auto;
+    color: var(--muted-foreground);
+    opacity: 0;
+    transform: translateX(-0.25rem);
+    transition:
+      color 0.16s ease,
+      opacity 0.16s ease,
+      transform 0.16s ease;
+  }
+
+  :global(.search-result:hover .search-result-arrow),
+  :global(.search-result:focus-visible .search-result-arrow) {
+    color: var(--accent);
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  :global(.search-empty) {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    padding: 2rem 0.875rem;
+  }
+
+  :global(.search-empty-icon) {
+    display: grid;
+    width: 2.5rem;
+    height: 2.5rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--border);
+    background: var(--muted);
+    color: var(--muted-foreground);
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+
+  .search-command-footer {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-top: 1px solid var(--border);
+    padding: 0.65rem 1.125rem;
+    color: var(--muted-foreground);
+    font-size: var(--fs-cap);
+  }
+
+  .search-command-footer span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .search-command-footer kbd {
+    display: inline-grid;
+    min-width: 1.25rem;
+    height: 1.25rem;
+    place-items: center;
+    border: 1px solid var(--border);
+    background: var(--muted);
+    color: var(--foreground);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+  }
+
+  :global(html.has-open-search),
+  :global(html.has-open-search body) {
+    overflow: hidden;
+  }
+
+  @keyframes search-command-in {
+    from {
+      opacity: 0;
+      transform: translateY(-0.5rem) scale(0.99);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @media (max-width: 39.99rem) {
+    .search-dialog {
+      padding: 0.75rem;
+    }
+
+    .search-command-field {
+      min-height: 3.5rem;
+      padding-inline: 0.875rem;
+    }
+
+    .search-command-input {
+      height: 3.5rem;
+      font-size: var(--fs-m);
+    }
+
+    .search-command-body {
+      max-height: calc(100dvh - 8rem);
+    }
+  }
+</style>

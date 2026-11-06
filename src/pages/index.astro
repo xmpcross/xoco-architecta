@@ -1,0 +1,203 @@
+---
+import { getCollection } from "astro:content";
+import CategoryTile from "@/components/CategoryTile.astro";
+import Hero from "@/components/Hero.astro";
+import NewsletterSignup from "@/components/NewsletterSignup.astro";
+import PostCard from "@/components/PostCard.astro";
+import Rail from "@/components/Rail.astro";
+import RankedList from "@/components/RankedList.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import SiteFooter from "@/components/SiteFooter.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import SwapText from "@/components/ui/SwapText.astro";
+import DigestRow from "@/components/home/DigestRow.astro";
+import LongRead from "@/components/home/LongRead.astro";
+import StatementBand from "@/components/home/StatementBand.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { siteConfig } from "@/config/site";
+import {
+  categories,
+  categorySlug,
+  excludePosts,
+  getByCategory,
+  getFeatured,
+  getTrending,
+  readMinutes,
+  visiblePosts,
+} from "@/lib/posts";
+
+const allPosts = visiblePosts(await getCollection("posts"));
+
+/*
+ * The front page spends each story once. Every block takes from what the
+ * blocks above it left, so adding or removing a post never leaves a section
+ * empty and never prints the same headline twice — with the deliberate
+ * exception of the two ranked indices, which re-present the whole archive.
+ */
+const featured = getFeatured(allPosts, 3);
+const afterHero = excludePosts(allPosts, featured);
+
+const digest = afterHero.slice(0, 4);
+const afterDigest = excludePosts(afterHero, digest);
+
+const trending = getTrending(afterDigest, 3);
+const afterTrending = excludePosts(afterDigest, trending);
+
+/** The long read picks itself: whichever remaining piece takes longest. */
+const longRead = [...afterTrending].sort((a, b) => readMinutes(b) - readMinutes(a))[0];
+const afterLongRead = longRead ? excludePosts(afterTrending, [longRead]) : afterTrending;
+
+/** Lead the spotlight with whichever desk still has the deepest archive. */
+const spotlightCategory = [...categories].sort(
+  (a, b) => getByCategory(afterLongRead, b).length - getByCategory(afterLongRead, a).length,
+)[0];
+const spotlight = spotlightCategory ? getByCategory(afterLongRead, spotlightCategory, 3) : [];
+const afterSpotlight = excludePosts(afterLongRead, spotlight);
+
+const latestGrid = afterSpotlight.slice(0, 8);
+const fromDesks = excludePosts(afterSpotlight, latestGrid).slice(0, 4);
+
+/** Both indices rank the full archive, so they are allowed to repeat headlines. */
+const mostRead = getTrending(allPosts, 6);
+const editorsPicks = excludePosts(allPosts, mostRead).slice(0, 6);
+
+const topics = categories
+  .map((category) => {
+    const posts = getByCategory(allPosts, category);
+    return { category, count: posts.length, cover: posts[0]?.data.cover };
+  })
+  .filter((topic) => topic.count > 0);
+---
+
+<BaseLayout>
+  <SiteHeader posts={allPosts} />
+  <main id="content">
+    <h1 class="sr-only">{siteConfig.name} — {siteConfig.tagline}</h1>
+
+    <Hero posts={featured} />
+
+    <section class="container section section--tight section-top" aria-labelledby="home-digest">
+      <h2 id="home-digest" class="sr-only">In this issue</h2>
+      <DigestRow posts={digest} label="In this issue" />
+    </section>
+
+    {
+      trending.length > 0 && (
+        <section class="container section section--tight reveal" aria-labelledby="home-reading">
+          <SectionHeader
+            title="Most read this week"
+            href="/posts/"
+            id="home-reading"
+          />
+          <Rail label="Most read stories" columns={3} itemWidth="86%" itemWidthSm="60%">
+            {trending.map((post) => (
+              <PostCard post={post} variant="overlay" size="tall" showExcerpt />
+            ))}
+          </Rail>
+        </section>
+      )
+    }
+
+    {
+      longRead && (
+        <section class="container section reveal" aria-labelledby="home-longread">
+          <h2 id="home-longread" class="sr-only">
+            The long read
+          </h2>
+          <LongRead post={longRead} />
+        </section>
+      )
+    }
+
+    {
+      spotlightCategory && spotlight.length > 0 && (
+        <section class="container section section--tight reveal" aria-labelledby="home-spotlight">
+          <SectionHeader
+            title={spotlightCategory}
+            href={`/category/${categorySlug(spotlightCategory)}/`}
+            id="home-spotlight"
+          />
+          <Rail label={`${spotlightCategory} stories`} columns={3} itemWidth="82%" itemWidthSm="52%">
+            {spotlight.map((post) => (
+              <PostCard post={post} variant="overlay" size="short" />
+            ))}
+          </Rail>
+        </section>
+      )
+    }
+
+    <section class="container section reveal" aria-labelledby="home-latest">
+      <SectionHeader title="Latest" href="/posts/" id="home-latest" />
+      <div class="with-sidebar">
+        <div class="min-w-0">
+          <div class="grid-cards grid-cards--4">
+            {/* Four across with two indices beside them: the dates alone keep the grid quiet. */}
+            {
+              latestGrid.map((post) => (
+                <PostCard post={post} headingLevel="h3" showByline={false} />
+              ))
+            }
+          </div>
+          <div class="home-more">
+            <a class="btn btn--ghost btn--lg" href="/posts/">
+              <SwapText text="Browse the archive" />
+            </a>
+          </div>
+        </div>
+
+        <aside class="sidebar-stack" aria-label="Journal indices">
+          <RankedList title="Most read" posts={mostRead} id="home-most-read" />
+          <RankedList title="Editor's picks" posts={editorsPicks} id="home-editors-picks" />
+        </aside>
+      </div>
+    </section>
+
+    <StatementBand
+      statement="A building is an argument that has to stand up. We read the section, name the constraint, and say who paid for the compromise."
+      attribution={`${siteConfig.editor.name}, editor`}
+      href="/about/"
+      id="home-statement"
+    />
+
+    <section class="container section section--tight section-top reveal" aria-labelledby="home-sections">
+      <SectionHeader title="Sections" href="/posts/" id="home-sections" />
+      <Rail label="Sections" columns={6} itemWidth="56%" itemWidthSm="34%">
+        {
+          topics.map((topic) => (
+            <CategoryTile category={topic.category} count={topic.count} cover={topic.cover} />
+          ))
+        }
+      </Rail>
+    </section>
+
+    {
+      fromDesks.length > 0 && (
+        <section class="container section reveal" aria-labelledby="home-desks">
+          <SectionHeader
+            title="From the desks"
+            href="/posts/"
+            id="home-desks"
+          />
+          <div class="ruled-rows ruled-rows--2">
+            {fromDesks.map((post) => (
+              <PostCard post={post} variant="list" headingLevel="h3" />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <NewsletterSignup />
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .home-more {
+    display: flex;
+    justify-content: center;
+    border-top: 1px solid var(--border);
+    padding-top: 2.5rem;
+    margin-top: 2.5rem;
+  }
+</style>

@@ -1,0 +1,40 @@
+---
+import { formatDate, postHref, type Post } from "@/lib/posts";
+
+/**
+ * A compact index of posts — no thumbnails, so it stays dense in a sidebar.
+ * Order carries the meaning (most read, editor's picks); use SidebarPosts
+ * instead where the covers are worth showing.
+ */
+interface Props {
+  title: string;
+  posts: Post[];
+  id: string;
+}
+
+const { title, posts, id } = Astro.props;
+---
+
+{
+  posts.length > 0 && (
+    <section class="panel ranked-block" aria-labelledby={id}>
+      <h2 id={id} class="txt-mono txt-dim">
+        {title}
+      </h2>
+      <ul class="ranked hover-fade-group">
+        {posts.map((post) => (
+          <li class="ranked__row">
+            <h3 class="txt-sub ranked__title">
+              <a href={postHref(post)}>{post.data.title}</a>
+            </h3>
+            <p class="txt-cap txt-dim">
+              {post.data.category}
+              {" — "}
+              <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}

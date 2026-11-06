@@ -1,0 +1,38 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+  meta?: string;
+  /** Set false when the page below opens with its own rule or layout edge. */
+  divider?: boolean;
+  class?: string;
+}
+
+const { title, description, meta, divider = true, class: className = "" } = Astro.props;
+---
+
+<header class:list={["page-header", !divider && "page-header--flush", className]}>
+  <h1 class="txt-h1">{title}</h1>
+  {description && <p class="txt-l txt-dim page-header__description">{description}</p>}
+  {meta && <p class="txt-xs txt-dim">{meta}</p>}
+  <slot />
+</header>
+
+<style>
+  .page-header {
+    display: grid;
+    gap: 0.75rem;
+    justify-items: start;
+    padding-block: 3rem 2.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .page-header--flush {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .page-header__description {
+    max-width: 40rem;
+  }
+</style>

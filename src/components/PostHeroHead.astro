@@ -1,0 +1,40 @@
+---
+import CategoryTag from "@/components/CategoryTag.astro";
+import Byline from "@/components/ui/Byline.astro";
+import Icon from "@/components/ui/Icon.astro";
+import { formatDate, readMinutes, type Post } from "@/lib/posts";
+
+interface Props {
+  post: Post;
+  /** Set when the block sits on a photograph rather than on paper. */
+  onDark?: boolean;
+  /** Lead-sized display type, used by the immersive opening. */
+  display?: boolean;
+  /** Centres the block, section tag through byline. Used by the immersive opening. */
+  center?: boolean;
+}
+
+const { post, onDark = false, display = false, center = false } = Astro.props;
+const data = post.data;
+---
+
+<div class:list={["posthead", onDark && "posthead--onDark", center && "posthead--center"]}>
+  <div class="tag-row">
+    <CategoryTag category={data.category} variant={onDark ? "glass" : "surface"} />
+  </div>
+
+  <h1 class:list={["txt-h1", display && "posthead__title--display"]}>{data.title}</h1>
+  <p class="txt-l posthead__excerpt">{data.excerpt}</p>
+
+  <div class:list={["meta", onDark && "meta--onDark"]}>
+    <Byline post={post} onDark={onDark} prefix />
+    <time class="meta__fact meta__fact--icon" datetime={data.date.toISOString()}>
+      <Icon name="calendar" size={14} />
+      {formatDate(data.date, "long")}
+    </time>
+    <span class="meta__fact meta__fact--icon">
+      <Icon name="clock" size={14} />
+      {readMinutes(post)} min read
+    </span>
+  </div>
+</div>

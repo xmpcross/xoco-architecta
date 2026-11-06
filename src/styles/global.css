@@ -1,0 +1,2804 @@
+@import "tailwindcss";
+@source "../**/*.{astro,ts,md}";
+
+/* ==========================================================================
+   Architecta — editorial design system
+   --------------------------------------------------------------------------
+   Strictly black and white. Ink, paper, and one soft wash carry the whole
+   interface, and photography is desaturated on the way in (see "Monochrome
+   media") so a colour cover cannot break the palette. Every corner is square:
+   the radius tokens are kept as tokens but set to 0, so a buyer who wants
+   softer blocks changes four numbers instead of hunting through components.
+   Structure comes from hairlines, mono capitals, and a drawing-sheet grid
+   rather than from colour.
+   ========================================================================== */
+
+@font-face {
+  font-family: "Geist";
+  src:
+    url("/fonts/geist/Geist-Variable.woff2") format("woff2-variations"),
+    url("/fonts/geist/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src:
+    url("/fonts/geist/GeistMono-Variable.woff2") format("woff2-variations"),
+    url("/fonts/geist/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-wash: var(--wash);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-ink-foreground: var(--ink-foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --radius-tag: var(--radius-tag);
+  --radius-control: var(--radius-control);
+  --radius-input: var(--radius-input);
+  --radius-block: var(--radius-block);
+}
+
+:root {
+  /* Neutral ramp -------------------------------------------------------- */
+  --n-0: #ffffff;
+  --n-25: #fafaf9;
+  --n-50: #f2f2f0;
+  --n-100: #e8e8e5;
+  --n-200: #dcdcd8;
+  --n-300: #c2c2bd;
+  --n-500: #74746f;
+  --n-600: #57574f;
+  --n-700: #3a3a35;
+  --n-900: #161615;
+  --n-950: #0c0c0b;
+
+  /* Signal accent — graphite. There is no colour anywhere in this theme: the
+     accent is a darker step of the same ramp, so links, focus, and active
+     state read through weight and contrast instead of hue. ---------------- */
+  --signal-300: var(--n-100);
+  --signal-400: var(--n-300);
+  --signal-500: var(--n-700);
+  --signal-600: var(--n-900);
+
+  color-scheme: light;
+  --background: var(--n-0);
+  --card: var(--n-0);
+  --wash: var(--n-50);
+  --foreground: var(--n-950);
+  --muted: var(--n-50);
+  --muted-foreground: var(--n-600);
+  --primary: var(--n-950);
+  --primary-foreground: var(--n-0);
+  --accent: var(--signal-500);
+  --accent-strong: var(--signal-600);
+  /* Text laid over an --accent fill. */
+  --accent-foreground: var(--n-0);
+  --border: var(--n-100);
+  --border-strong: var(--n-200);
+  --ink: var(--n-950);
+  --ink-foreground: var(--n-0);
+  --ink-muted: rgb(255 255 255 / 0.6);
+  --glass: rgb(0 0 0 / 0.32);
+  /* Opaque enough for a white icon to hold up over any cover photo. */
+  --glass-strong: rgb(0 0 0 / 0.55);
+
+  /*
+   * Media treatment. Every photograph in the theme passes through this filter.
+   * Photography currently ships in colour; for the monochrome treatment set
+   * `--img-filter: grayscale(1) contrast(1.08) brightness(0.99)`,
+   * `--img-filter-hover: grayscale(1) contrast(1.16) brightness(1.02)`, and
+   * `--img-overlay: rgb(12 12 11 / 0.14)` here (plus the dark-mode variants).
+   */
+  --img-filter: none;
+  --img-filter-hover: none;
+  /* Ink wash laid over cover photography — off while images run in colour. */
+  --img-overlay: transparent;
+
+  /* Type ----------------------------------------------------------------- */
+  --font-sans:
+    "Geist", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Arial,
+    sans-serif;
+  --font-mono:
+    "Geist Mono", ui-monospace, "SFMono-Regular", "Cascadia Code", Consolas, Menlo, monospace;
+
+  /* Display size is used by the two places that set their own type against a
+     full-bleed photograph rather than against the page grid: the homepage lead
+     and the immersive article opening. */
+  --fs-display: clamp(2.5rem, 9vw, 4rem);
+  --fs-h1: 2.125rem;
+  --fs-h2: 1.625rem;
+  --fs-h3: 1.375rem;
+  --fs-h4: 1.125rem;
+  --fs-h5: 1rem;
+  --fs-h6: 0.875rem;
+  --fs-l: 1.125rem;
+  --fs-m: 1rem;
+  --fs-s: 0.875rem;
+  --fs-xs: 0.75rem;
+  --fs-cap: 0.6875rem;
+
+  --lh-title: 1.1;
+  --lh-body: 1.5;
+  --ls-title: -0.03em;
+  /* Mono capitals used for eyebrows, indices, and metadata rows. */
+  --ls-caps: 0.14em;
+
+  --weight-title: 600;
+  --weight-body: 450;
+  --weight-strong: 600;
+
+  /* Shape ---------------------------------------------------------------- */
+  /* Square by design. Raise these to soften the theme; every block, control,
+     tag, and media frame reads from them. */
+  --radius-tag: 0;
+  --radius-control: 0;
+  --radius-input: 0;
+  --radius-block: 0;
+  /* Author portraits are the one round element in the theme: a face reads as a
+     face, and a byline stack of overlapping circles is legible where a row of
+     squares is not. Set it to 0 to square them up with everything else. */
+  --radius-avatar: 50%;
+  /* Ring drawn around each portrait in a coauthored stack, so overlapping
+     circles stay separated. Matches the surface the byline sits on. */
+  --avatar-ring: var(--background);
+
+  /* Layout --------------------------------------------------------------- */
+  /*
+   * One track for the whole site: header, footer, and every page section sit
+   * on the same near-full-bleed measure, held off the viewport edge by a
+   * deliberately small gutter. The max-width only engages past ~1920px, where
+   * it stops card grids stretching into unreadable widths.
+   */
+  --container: 120rem;
+  --gutter: 1rem;
+  --reading: 51.25rem;
+  --sidebar: 20rem;
+  /* Ink bands run edge to edge in this theme; kept as a token so a buyer can
+     inset them again in one place. */
+  --frame: 0rem;
+  --section-gap: 3.5rem;
+  --header-height: 4rem;
+  --hairline: 1px solid var(--border);
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (min-width: 40rem) {
+  :root {
+    --gutter: 1.25rem;
+    --section-gap: 4.5rem;
+    --fs-h1: 2.5rem;
+    --fs-h2: 1.75rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  :root {
+    --gutter: 1.5rem;
+    --section-gap: 5rem;
+    --fs-h1: 3rem;
+    --fs-h2: 2rem;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* Page sits close to the ink blocks so the framed footer and subscribe
+     bands read as part of the page rather than as a hard black cut-out. */
+  --background: #0a0a0a;
+  --card: #141413;
+  --wash: #141413;
+  --foreground: var(--n-25);
+  --muted: #1c1c1b;
+  --muted-foreground: #a3a39d;
+  --primary: var(--n-25);
+  --primary-foreground: var(--n-950);
+  --accent: var(--signal-400);
+  --accent-strong: var(--signal-300);
+  --accent-foreground: var(--n-950);
+  --border: #272725;
+  --border-strong: #383835;
+  --ink: #030303;
+  --ink-foreground: var(--n-25);
+  /* Photographs are still pulled down slightly in dark mode so a bright facade
+     does not glare out of a near-black page — colour is left intact. */
+  --img-filter: brightness(0.92);
+  --img-filter-hover: brightness(1);
+  --img-overlay: rgb(0 0 0 / 0.12);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--header-height) + 1rem);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100svh;
+  min-width: 320px;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: var(--fs-m);
+  font-weight: var(--weight-body);
+  line-height: var(--lh-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+img,
+svg,
+video,
+picture {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.skip-link {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 400;
+  transform: translateY(-200%);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  padding: 0.75rem 1.1rem;
+  font-size: var(--fs-xs);
+  font-weight: var(--weight-strong);
+  border-radius: var(--radius-control);
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   Type scale
+   ========================================================================== */
+
+.txt-h1,
+.txt-h2,
+.txt-h3,
+.txt-h4,
+.txt-h5,
+.txt-h6 {
+  font-weight: var(--weight-title);
+  line-height: var(--lh-title);
+  letter-spacing: var(--ls-title);
+  text-wrap: balance;
+  margin: 0;
+}
+
+.txt-h1 {
+  font-size: var(--fs-h1);
+}
+.txt-h2 {
+  font-size: var(--fs-h2);
+}
+.txt-h3 {
+  font-size: var(--fs-h3);
+}
+.txt-h4 {
+  font-size: var(--fs-h4);
+}
+.txt-h5 {
+  font-size: var(--fs-h5);
+}
+.txt-h6 {
+  font-size: var(--fs-h6);
+}
+
+.txt-l,
+.txt-m,
+.txt-s,
+.txt-xs,
+.txt-cap {
+  line-height: var(--lh-body);
+  text-wrap: pretty;
+  margin: 0;
+}
+
+.txt-l {
+  font-size: var(--fs-l);
+}
+.txt-m {
+  font-size: var(--fs-m);
+}
+.txt-s {
+  font-size: var(--fs-s);
+}
+.txt-xs {
+  font-size: var(--fs-xs);
+}
+.txt-cap {
+  font-size: var(--fs-cap);
+  line-height: 1.4;
+}
+
+/* Compact, semibold supporting text: bylines, buttons, nav, badges. */
+.txt-sub,
+.txt-sub-xs {
+  margin: 0;
+  font-size: var(--fs-s);
+  font-weight: var(--weight-strong);
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+.txt-sub-xs {
+  font-size: var(--fs-xs);
+}
+
+.txt-dim {
+  color: var(--muted-foreground);
+}
+
+/*
+ * Mono capitals. The theme has no second typeface and no colour, so this is
+ * what carries hierarchy in the small sizes: eyebrows, section labels, indices,
+ * dates, and credits all read as drawing-sheet annotation rather than as body
+ * copy set slightly smaller.
+ */
+.txt-mono {
+  font-family: var(--font-mono);
+  font-size: var(--fs-cap);
+  font-weight: 500;
+  letter-spacing: var(--ls-caps);
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Layout
+   ========================================================================== */
+
+/* Short pages still close on the bottom edge, so the pinned footer of the
+   reveal never floats mid-screen with paper under it. */
+body > main {
+  flex: 1 0 auto;
+}
+
+.container {
+  width: 100%;
+  max-width: calc(var(--container) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.container-reading {
+  width: 100%;
+  max-width: calc(var(--reading) + var(--gutter) * 2);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.section {
+  padding-bottom: var(--section-gap);
+}
+
+.section-top {
+  padding-top: var(--section-gap);
+}
+
+/* Full-bleed dark bands sit inside an 8px frame so the page edge stays paper. */
+.frame {
+  padding: var(--frame);
+}
+
+.frame-block {
+  border-radius: var(--radius-block);
+  background: var(--ink);
+  color: var(--ink-foreground);
+  overflow: hidden;
+}
+
+/* ==========================================================================
+   Section headings
+   ========================================================================== */
+
+.section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.section-head__meta {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.section-head__eyebrow {
+  display: block;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--fs-cap);
+  font-weight: 500;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+}
+
+.section-link {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--foreground);
+}
+
+/* A glyph that steps forward on hover — no disc, no outline. */
+.section-link__arrow {
+  display: grid;
+  place-items: center;
+  transition: transform 0.3s var(--ease-out);
+}
+
+.section-link:hover .section-link__arrow {
+  transform: translateX(0.25rem);
+}
+
+/* ==========================================================================
+   Text swap — used on nav, buttons, bylines
+   ========================================================================== */
+
+.swap {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  white-space: nowrap;
+}
+
+.swap::after {
+  position: absolute;
+  inset: 0;
+  content: attr(data-swap);
+  transform: translateY(110%);
+  transition: transform 0.36s var(--ease-out);
+}
+
+.swap > span {
+  display: block;
+  transition: transform 0.36s var(--ease-out);
+}
+
+:is(a, button):hover .swap > span,
+:is(a, button):focus-visible .swap > span {
+  transform: translateY(-110%);
+}
+
+:is(a, button):hover .swap::after,
+:is(a, button):focus-visible .swap::after {
+  transform: translateY(0);
+}
+
+/* ==========================================================================
+   Buttons & controls
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding-inline: 1.25rem;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-control);
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--fs-cap);
+  font-weight: 500;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    color 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.btn:hover {
+  background: color-mix(in srgb, var(--primary) 82%, var(--background));
+  border-color: color-mix(in srgb, var(--primary) 82%, var(--background));
+}
+
+.btn--lg {
+  height: 2.75rem;
+  padding-inline: 1.75rem;
+  font-size: var(--fs-xs);
+}
+
+.btn--ghost {
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--foreground);
+}
+
+.btn--ghost:hover {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* Sits on an ink band, where `--primary` would disappear into the background. */
+.btn--onDark {
+  border-color: var(--ink-foreground);
+  background: var(--ink-foreground);
+  color: var(--ink);
+}
+
+.btn--onDark:hover {
+  border-color: var(--ink-foreground);
+  background: transparent;
+  color: var(--ink-foreground);
+}
+
+.btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/*
+ * Bare glyph controls. No fill, no outline, no chip — the icon itself is the
+ * control, and it responds by fading. Anything that needs to sit on a
+ * photograph gets the `--onDark` variant rather than a glass pill.
+ */
+.icon-btn {
+  display: inline-grid;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.25s ease;
+}
+
+.icon-btn:hover {
+  opacity: 0.55;
+}
+
+.icon-btn[disabled] {
+  cursor: default;
+  opacity: 0.25;
+}
+
+.icon-btn[disabled]:hover {
+  opacity: 0.25;
+}
+
+/* Inline email capture: input + button share one rounded shell. */
+.field {
+  display: flex;
+  align-items: center;
+  height: 2.75rem;
+  padding: 0.125rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--card);
+  overflow: hidden;
+}
+
+.field:focus-within {
+  border-color: var(--accent);
+}
+
+.field__input {
+  min-width: 0;
+  flex: 1;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  outline: none;
+  padding-inline: 0.875rem;
+  font-size: var(--fs-s);
+}
+
+.field__input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.field__input:disabled {
+  cursor: not-allowed;
+}
+
+.field .btn {
+  height: calc(100% - 0.05rem);
+  flex-shrink: 0;
+}
+
+.field--onDark {
+  border-color: transparent;
+  background: var(--n-0);
+}
+
+.field--onDark .field__input {
+  color: var(--n-950);
+}
+
+.field--onDark .field__input::placeholder {
+  color: var(--n-500);
+}
+
+.field--onDark .btn {
+  border-color: var(--n-950);
+  background: var(--n-950);
+  color: var(--n-0);
+}
+
+.input {
+  width: 100%;
+  min-height: 2.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  background: var(--card);
+  color: var(--foreground);
+  padding: 0.6rem 0.875rem;
+  font-size: var(--fs-s);
+}
+
+.input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.form-note {
+  color: var(--muted-foreground);
+  font-size: var(--fs-cap);
+  line-height: 1.5;
+}
+
+.form-note a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+/* ==========================================================================
+   Tags & badges
+   ========================================================================== */
+
+/* Glass tag — sits on top of cover imagery. */
+.tag {
+  display: inline-flex;
+  height: 1.5rem;
+  align-items: center;
+  border-radius: var(--radius-tag);
+  background: var(--glass);
+  padding-inline: 0.5rem;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: var(--fs-cap);
+  font-weight: 500;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Solid tag — sits on paper. */
+.tag--surface {
+  border: 1px solid var(--border-strong);
+  background: transparent;
+  color: var(--foreground);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition:
+    background-color 0.25s ease,
+    color 0.25s ease;
+}
+
+a.tag--surface:hover {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.count-chip {
+  display: inline-flex;
+  height: 1.5rem;
+  width: fit-content;
+  align-items: center;
+  border-radius: var(--radius-tag);
+  background: var(--glass);
+  padding-inline: 0.5rem;
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: var(--fs-cap);
+  font-weight: 500;
+  letter-spacing: var(--ls-caps);
+  text-transform: uppercase;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* ==========================================================================
+   Surfaces
+   ========================================================================== */
+
+.panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-block);
+  background: var(--card);
+}
+
+.frame-block .txt-dim {
+  color: var(--ink-muted);
+}
+
+/* ==========================================================================
+   Media treatment
+   --------------------------------------------------------------------------
+   One rule filters every photograph the theme renders — covers, tiles,
+   hero slides, article openings, sidebar thumbnails, portraits, and images
+   inside article prose. Currently a pass-through, so photography shows in
+   colour; put `grayscale(1)` back into `--img-filter` in `:root` to return to
+   the monochrome treatment.
+   ========================================================================== */
+
+.media img,
+.card-overlay__media img,
+.card-compact__media img,
+.tile__media img,
+.hero__media img,
+.posthero-cover__media img,
+.posthero-immersive__media img,
+.prose img,
+.avatar {
+  filter: var(--img-filter);
+  transition:
+    filter 0.45s var(--ease-out),
+    scale 0.45s var(--ease-out);
+}
+
+.zoom-host:hover .media img,
+.zoom-host:focus-within .media img,
+.card-overlay:hover .card-overlay__media img,
+.tile:hover .tile__media img {
+  filter: var(--img-filter-hover);
+}
+
+/* ==========================================================================
+   Media
+   ========================================================================== */
+
+.media {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-block);
+  background: var(--muted);
+}
+
+.media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  will-change: scale;
+}
+
+/* Ink wash over the photograph: the flat half of the monochrome treatment,
+   which keeps a pale facade from reading as a blown-out white rectangle. */
+.media::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  pointer-events: none;
+  background: var(--img-overlay);
+  mix-blend-mode: multiply;
+}
+
+.media--square {
+  aspect-ratio: 1;
+}
+
+.media--wide {
+  aspect-ratio: 16 / 10;
+}
+
+.zoom-host:hover .media img,
+.zoom-host:focus-within .media img {
+  scale: 1.04;
+}
+
+/* Gradient scrim for text laid over imagery. Tuned for light covers — a
+   product shot on white still has to carry white type legibly. */
+.scrim {
+  position: relative;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0) 0%, rgb(0 0 0 / 0.78) 100%);
+}
+
+.scrim::before {
+  position: absolute;
+  inset: 0;
+  content: "";
+  mask-image: linear-gradient(to bottom, transparent 0%, rgb(0 0 0 / 0.15) 22%, rgb(0 0 0) 55%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgb(0 0 0 / 0.15) 22%,
+    rgb(0 0 0) 55%
+  );
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
+}
+
+.scrim > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* ==========================================================================
+   Avatars
+   ========================================================================== */
+
+.avatar {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  border-radius: var(--radius-avatar);
+  /* Portrait, when there is one, is set inline as a background-image. */
+  background-color: var(--primary);
+  background-position: center;
+  background-size: cover;
+  color: var(--primary-foreground);
+  font-size: var(--fs-cap);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.avatar--sm {
+  width: 1.5rem;
+  height: 1.5rem;
+  font-size: 0.5625rem;
+}
+
+.avatar--md {
+  width: 2.5rem;
+  height: 2.5rem;
+  font-size: var(--fs-xs);
+}
+
+.avatar--lg {
+  width: 4rem;
+  height: 4rem;
+  font-size: var(--fs-h4);
+}
+
+.avatar--xl {
+  width: 4.5rem;
+  height: 4.5rem;
+  font-size: var(--fs-h3);
+}
+
+.avatar--onDark {
+  background-color: rgb(255 255 255 / 0.12);
+  color: #fff;
+}
+
+/*
+ * Coauthored bylines: the portraits overlap into one stack rather than lining
+ * up as separate marks, which keeps a two-name byline the same height as a
+ * one-name byline. Each circle is ringed in the surface behind it so the
+ * overlap reads as depth instead of as a collision. A stack of one gets
+ * neither treatment, so a solo byline is untouched.
+ */
+.avatar-stack {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.avatar-stack--multi .avatar {
+  box-shadow: 0 0 0 2px var(--avatar-ring);
+}
+
+.avatar-stack--multi .avatar + .avatar {
+  margin-left: -0.5rem;
+}
+
+/* ==========================================================================
+   Post meta — avatar, byline, dot-separated facts
+   ========================================================================== */
+
+/*
+ * One voice for the whole row. The byline, the date, and the read time are set
+ * in the same face, size, and tracking wherever a meta row appears — no mono
+ * capitals against sans names, and no tracking on either.
+ */
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.125rem;
+  color: var(--muted-foreground);
+  font-size: var(--fs-xs);
+  font-weight: var(--weight-strong);
+  letter-spacing: normal;
+}
+
+/* Sits above `.card__link` so each name in the byline stays independently
+   clickable — a coauthored post links to both archives, not just the lead. */
+.meta__byline {
+  /* Names and connectives read as one sentence, so the words sit at a normal
+     word space rather than at the wider gap the row's own parts use. */
+  --byline-gap: 0.3rem;
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem var(--byline-gap);
+  color: var(--muted-foreground);
+}
+
+/* The portraits are a mark, not a word — they keep a little more air. */
+.meta__byline .avatar-stack {
+  margin-right: 0.2rem;
+}
+
+.meta__author:hover {
+  color: var(--foreground);
+}
+
+/* "by", "&", and the "+2 more" tail: connective tissue, not names. */
+.meta__conjunction {
+  color: var(--muted-foreground);
+  font-weight: 500;
+}
+
+/* A comma belongs to the name before it, so it cancels the row gap. */
+.meta__conjunction--tight {
+  margin-left: calc(var(--byline-gap) * -1);
+}
+
+/* Dates and read times: the row's own face, one weight lighter than the names. */
+.meta__fact {
+  position: relative;
+  font-weight: 500;
+}
+
+.meta__fact::before {
+  position: absolute;
+  left: -0.625rem;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  content: "";
+  transform: translateY(-50%);
+  background: currentColor;
+}
+
+/* The mark separates facts, so the first one on a row does without it — which is
+   what a card with its byline turned off renders. */
+.meta__fact:first-child::before {
+  content: none;
+}
+
+/*
+ * The article page marks each fact with its own glyph instead of the separator
+ * dot: there is room for it at reading width, and it tells a date from a read
+ * time at a glance.
+ */
+.meta__fact--icon {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.meta__fact--icon::before {
+  content: none;
+}
+
+.meta--onDark {
+  color: var(--ink-muted);
+  /* Over a cover photograph there is no flat surface to borrow, so the ring
+     falls back to the same ink glass the icon buttons use. */
+  --avatar-ring: var(--glass-strong);
+}
+
+.meta--onDark .meta__byline,
+.meta--onDark .meta__conjunction {
+  color: var(--ink-muted);
+}
+
+.meta--onDark .meta__author:hover {
+  color: #fff;
+}
+
+/* ==========================================================================
+   Post cards
+   ========================================================================== */
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.card__media {
+  position: relative;
+}
+
+.card__tags {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 2;
+}
+
+.card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.card__title {
+  transition: color 0.25s ease;
+}
+
+.card:hover .card__title {
+  color: var(--accent);
+}
+
+.card__meta {
+  margin-top: auto;
+}
+
+/* Whole-card hit area, kept above the media so nested links still work. */
+.card__link {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.card__link + * {
+  position: relative;
+}
+
+/* Overlay card — image fills the card, copy sits in the scrim. */
+.card-overlay {
+  position: relative;
+  display: flex;
+  min-height: 19rem;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border-radius: var(--radius-block);
+  background: var(--muted);
+  color: #fff;
+  isolation: isolate;
+}
+
+.card-overlay__media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.card-overlay__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Base wash so tag chips at the top stay readable over pale imagery. */
+.card-overlay__media::after,
+.tile__media::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0.28) 0%,
+    rgb(0 0 0 / 0.06) 38%,
+    rgb(0 0 0 / 0.3) 100%
+  );
+}
+
+.card-overlay:hover .card-overlay__media img {
+  scale: 1.04;
+}
+
+.card-overlay__tags {
+  position: relative;
+  z-index: 2;
+  padding: 1rem 1rem 0;
+}
+
+.card-overlay__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 2.25rem 1.25rem 1.25rem;
+}
+
+.card-overlay__title {
+  color: #fff;
+}
+
+.card-overlay__excerpt {
+  color: var(--ink-muted);
+}
+
+.card-overlay--tall {
+  min-height: 26rem;
+}
+
+/* Still the compact variant, but tall enough not to letterbox: three of these
+   across the wide track are around 600px wide, and 15rem of height read as a
+   strip rather than as a card. Used by the most-read rail and the related rail. */
+.card-overlay--short {
+  min-height: 18rem;
+}
+
+/* Sidebar card — small thumbnail beside a compact title. */
+.card-compact {
+  position: relative;
+  display: grid;
+  grid-template-columns: 4rem minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.card-compact__media {
+  width: 4rem;
+  height: 4rem;
+  overflow: hidden;
+  border-radius: var(--radius-control);
+  background: var(--muted);
+}
+
+.card-compact__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ==========================================================================
+   Category tile
+   ========================================================================== */
+
+.tile {
+  position: relative;
+  display: flex;
+  aspect-ratio: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  border-radius: var(--radius-block);
+  background: var(--muted);
+  color: #fff;
+  isolation: isolate;
+}
+
+.tile__media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.tile__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tile:hover .tile__media img {
+  scale: 1.05;
+}
+
+.tile__top {
+  padding: 1rem 1rem 0;
+}
+
+.tile__body {
+  padding: 2.25rem 1.25rem 1.25rem;
+}
+
+/* ==========================================================================
+   Horizontal rails — scroll-snap, no carousel library
+   ========================================================================== */
+
+.rail {
+  position: relative;
+  --rail-nav-size: 2.5rem;
+  /* Room between the track edge and the viewport edge: the container gutter
+     plus whatever margin is left once the container hits its max width. 100vw
+     counts the classic scrollbar, so trim a little to stay clear of it. */
+  --rail-nav-room: calc((100vw - 100%) / 2 - 0.75rem);
+  /* Park the arrows in that margin: never tighter than the gutter (which is
+     always there) and never further out than one button plus a small gap, so
+     they stay attached to the rail on ultrawide screens. */
+  --rail-nav-offset: min(
+    calc(var(--rail-nav-size) + 0.75rem),
+    max(var(--gutter), var(--rail-nav-room))
+  );
+}
+
+.rail__track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--rail-item, 78%);
+  gap: 1.25rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding-bottom: 0.25rem;
+}
+
+.rail__track::-webkit-scrollbar {
+  display: none;
+}
+
+.rail__track > * {
+  scroll-snap-align: start;
+}
+
+/* Hidden by default: a swiped track already advertises itself through the
+   card the viewport cuts off, so the arrows are a desktop-only affordance. */
+.rail__nav {
+  display: none;
+  position: absolute;
+  top: 50%;
+  z-index: 5;
+  width: var(--rail-nav-size);
+  height: var(--rail-nav-size);
+  transform: translateY(-50%);
+}
+
+.rail__nav--prev {
+  left: calc(-1 * var(--rail-nav-offset));
+}
+
+.rail__nav--next {
+  right: calc(-1 * var(--rail-nav-offset));
+}
+
+/* At either end the arrow has nothing left to do — fade it out instead of
+   leaving a dim disc parked in the margin. */
+.rail__nav[disabled] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (min-width: 40rem) {
+  .rail__track {
+    grid-auto-columns: var(--rail-item-sm, 48%);
+  }
+}
+
+/* At large sizes the rail stops scrolling and becomes a plain N-column grid,
+   unless it is marked `--scroll`, which keeps paging through overflow. */
+@media (min-width: 64rem) {
+  .rail:not(.rail--scroll) .rail__track {
+    grid-auto-flow: row;
+    grid-auto-columns: auto;
+    grid-template-columns: var(--rail-columns, repeat(3, minmax(0, 1fr)));
+    overflow-x: visible;
+  }
+
+  .rail--scroll .rail__track {
+    grid-auto-columns: var(--rail-item-lg, 48%);
+  }
+
+  /* Only the rails that keep paging at this size still need buttons. */
+  .rail--scroll .rail__nav {
+    display: inline-grid;
+  }
+}
+
+/* ==========================================================================
+   Grids
+   ========================================================================== */
+
+.grid-cards {
+  display: grid;
+  gap: 1.25rem 1.25rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .grid-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 1.25rem;
+  }
+}
+
+/* The site runs on a near-full-bleed track, so the plain grid takes a third
+   column rather than letting cards grow to half the viewport. */
+@media (min-width: 64rem) {
+  .grid-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.grid-cards--3 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .grid-cards--3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 64rem) {
+  .grid-cards--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 96rem) {
+  .grid-cards--3 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.with-sidebar {
+  display: grid;
+  gap: 3rem;
+  align-items: start;
+}
+
+@media (min-width: 64rem) {
+  .with-sidebar {
+    grid-template-columns: minmax(0, 1fr) var(--sidebar);
+  }
+}
+
+.sidebar-stack {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* ==========================================================================
+   Front page
+   --------------------------------------------------------------------------
+   The homepage runs on the wide track and is ruled rather than carded: cells
+   are divided by hairlines, sections open on a heavy rule, and small text is
+   set as mono annotation. Nothing here is homepage-only in principle — the
+   same blocks work on a category or author page that wants more density.
+   ========================================================================== */
+
+/* Digest row — four short items divided only by the rules between them. No
+   rule above or below: the row sits directly under the lead photograph. */
+.digest {
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.digest__item {
+  position: relative;
+  display: grid;
+  gap: 0.55rem;
+  align-content: start;
+  padding-block: 1.125rem;
+}
+
+/* Stacked on a phone, so the separators run horizontally instead. */
+.digest__item + .digest__item {
+  border-top: 1px solid var(--border);
+}
+
+.digest__title {
+  transition: color 0.25s ease;
+}
+
+.digest__item:hover .digest__title {
+  color: var(--accent);
+}
+
+@media (min-width: 40rem) {
+  .digest {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Two across: the separators become vertical, so the stacked rule is
+     dropped and only the second row keeps a horizontal one. */
+  .digest__item {
+    padding: 1.25rem 1.25rem 1.5rem;
+    border-left: 1px solid var(--border);
+  }
+
+  .digest__item + .digest__item {
+    border-top: 0;
+  }
+
+  .digest__item:nth-child(2n + 1) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .digest__item:nth-child(n + 3) {
+    border-top: 1px solid var(--border);
+  }
+}
+
+@media (min-width: 64rem) {
+  .digest {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  /* One row of four: every separator is vertical and nothing rules across. */
+  .digest__item:nth-child(2n + 1) {
+    padding-left: 1.25rem;
+    border-left: 1px solid var(--border);
+  }
+
+  .digest__item:nth-child(4n + 1) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .digest__item:nth-child(n + 3) {
+    border-top: 0;
+  }
+}
+
+/* Ranked index — a numbered contents list. */
+.ranked-block {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.ranked {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ranked__row {
+  position: relative;
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+  padding-block: 0.9rem;
+  border-top: 1px solid var(--border);
+}
+
+.ranked__row:first-child {
+  border-top: 0;
+  padding-top: 0.35rem;
+}
+
+.ranked__title {
+  transition: color 0.25s ease;
+}
+
+.ranked__row:hover .ranked__title {
+  color: var(--accent);
+}
+
+/* Long read — one story given a full-width split. */
+.longread {
+  display: grid;
+  gap: 1.75rem;
+}
+
+@media (min-width: 64rem) {
+  .longread {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 3.5rem;
+    align-items: center;
+  }
+}
+
+.longread__body {
+  display: grid;
+  justify-items: start;
+  align-content: center;
+  gap: 1.125rem;
+}
+
+.longread__title {
+  font-size: clamp(1.875rem, 4vw, 3rem);
+  text-wrap: balance;
+}
+
+.longread__excerpt {
+  max-width: 34rem;
+}
+
+/* Taller crop once the split goes side by side, so the type column has a
+   photograph of comparable presence rather than a letterbox. */
+@media (min-width: 64rem) {
+  .longread__media {
+    aspect-ratio: 4 / 3;
+  }
+}
+
+/* Statement band — a full-bleed ink block carrying one sentence. */
+.statement__inner {
+  display: grid;
+  gap: 1.75rem;
+  padding-block: clamp(3rem, 7vw, 5.5rem);
+}
+
+.statement__quote {
+  max-width: 48rem;
+  margin: 0;
+  font-size: clamp(1.5rem, 3.4vw, 2.375rem);
+  font-weight: 500;
+  line-height: 1.16;
+  letter-spacing: var(--ls-title);
+  text-wrap: balance;
+}
+
+.statement__attribution {
+  color: var(--ink-muted);
+}
+
+/* Ruled rows — editorial rows separated by hairlines instead of gaps. */
+.ruled-rows {
+  display: grid;
+}
+
+.ruled-rows > * {
+  padding-block: 2rem;
+  border-top: 1px solid var(--border);
+}
+
+.ruled-rows > *:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+@media (min-width: 64rem) {
+  .ruled-rows--2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 3.5rem;
+  }
+
+  /* Two per row, so the second cell of the first row loses its rule too. */
+  .ruled-rows--2 > *:nth-child(2) {
+    border-top: 0;
+    padding-top: 0;
+  }
+}
+
+/* Four-up card grid for the wide track. */
+.grid-cards--4 {
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 40rem) {
+  .grid-cards--4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 75rem) {
+  .grid-cards--4 {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Denser section rhythm for the front page, which is ruled rather than
+   spaced. */
+.section--tight {
+  padding-bottom: 2.5rem;
+}
+
+@media (min-width: 64rem) {
+  .section--tight {
+    padding-bottom: 3.5rem;
+  }
+}
+
+/* ==========================================================================
+   Header
+   ========================================================================== */
+
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  border-bottom: 1px solid var(--border);
+  background: var(--background);
+  transition:
+    transform 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.site-header.is-scrolled {
+  border-bottom-color: var(--border-strong);
+}
+
+.site-header.is-hidden {
+  transform: translateY(-100%);
+}
+
+.site-header:focus-within {
+  transform: translateY(0);
+}
+
+.site-header__inner {
+  display: flex;
+  height: var(--header-height);
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Three tracks keep the nav optically centred regardless of wordmark width. */
+@media (min-width: 64rem) {
+  .site-header__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  .site-header__inner > :first-child {
+    justify-self: start;
+  }
+
+  .site-header__inner > :last-child {
+    justify-self: end;
+  }
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.nav {
+  display: none;
+  align-items: center;
+  height: 100%;
+}
+
+@media (min-width: 64rem) {
+  .nav {
+    display: flex;
+  }
+}
+
+.nav__parent {
+  position: relative;
+  display: flex;
+  height: 100%;
+}
+
+.nav__item {
+  position: relative;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  gap: 0.375rem;
+  padding-inline: 0.75rem;
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: opacity 0.25s ease;
+}
+
+/* Dim the siblings of whichever top-level entry is hovered. */
+.nav > * {
+  transition: opacity 0.25s ease;
+}
+
+.nav:hover > *:not(:hover) {
+  opacity: 0.55;
+}
+
+.nav__item[aria-current="page"]::after {
+  position: absolute;
+  bottom: 1rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  height: 2px;
+  content: "";
+  background: var(--accent);
+}
+
+/*
+ * Closed menus and inactive slides hide with `display: none` rather than
+ * `visibility: hidden`: it keeps them out of the layout, the tab order, and the
+ * accessibility tree instead of leaving empty-looking links behind. The
+ * `allow-discrete` behaviour plus `@starting-style` keeps the fade both ways.
+ */
+.nav__submenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  display: none;
+  min-width: 12rem;
+  gap: 0.125rem;
+  opacity: 0;
+  transform: translateY(0.35rem);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--card);
+  padding: 0.375rem;
+  box-shadow: 0 18px 40px rgb(0 0 0 / 0.1);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    display 0.22s allow-discrete;
+}
+
+.nav__parent:hover .nav__submenu,
+.nav__parent:focus-within .nav__submenu {
+  display: grid;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@starting-style {
+  .nav__parent:hover .nav__submenu,
+  .nav__parent:focus-within .nav__submenu {
+    opacity: 0;
+    transform: translateY(0.35rem);
+  }
+}
+
+.nav__sublink {
+  display: block;
+  padding: 0.5rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition: background-color 0.2s ease;
+}
+
+.nav__sublink:hover {
+  background: var(--muted);
+}
+
+.header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/*
+ * Overlay mode, used by the immersive article opening. The bar leaves the flow
+ * so the photograph can start at the first pixel of the page, and gives up its
+ * background while the page is at the top. Everything below is scoped to
+ * `:not(.is-scrolled)`: the moment the reader moves, the normal solid bar comes
+ * back, so the header that returns on scroll up is never white type on paper.
+ */
+.site-header--overlay {
+  position: fixed;
+  right: 0;
+  left: 0;
+}
+
+.site-header--overlay:not(.is-scrolled) {
+  border-bottom-color: transparent;
+  background: transparent;
+  color: #fff;
+}
+
+/* Carries the controls over a bright facade. Runs past the bar so the fade has
+   somewhere to finish. */
+.site-header--overlay:not(.is-scrolled)::before {
+  position: absolute;
+  inset: 0 0 -4rem;
+  content: "";
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0.5) 0%,
+    rgb(0 0 0 / 0.24) 45%,
+    rgb(0 0 0 / 0) 100%
+  );
+  pointer-events: none;
+}
+
+/* The row sits above that gradient rather than under it. */
+.site-header--overlay:not(.is-scrolled) .site-header__inner {
+  position: relative;
+}
+
+.site-header--overlay:not(.is-scrolled) .nav__item {
+  color: inherit;
+}
+
+.site-header--overlay:not(.is-scrolled) .nav__item[aria-current="page"]::after {
+  background: #fff;
+}
+
+/* The submenu is a page surface, not part of the photograph, so it takes the
+   page's own text colour back. */
+.site-header--overlay:not(.is-scrolled) .nav__submenu {
+  color: var(--foreground);
+}
+
+/* A near-black button disappears into the scrim, so it inverts here. */
+.site-header--overlay:not(.is-scrolled) .header-subscribe {
+  border-color: #fff;
+  background: #fff;
+  color: var(--n-950);
+}
+
+.site-header--overlay:not(.is-scrolled) .header-subscribe:hover {
+  border-color: #fff;
+  background: transparent;
+  color: #fff;
+}
+
+.theme-toggle .theme-icon-sun {
+  display: none;
+}
+
+:root[data-theme="dark"] .theme-toggle .theme-icon-sun {
+  display: block;
+}
+
+:root[data-theme="dark"] .theme-toggle .theme-icon-moon {
+  display: none;
+}
+
+/* ==========================================================================
+   Mobile menu
+   ========================================================================== */
+
+html.has-open-menu,
+html.has-open-menu body {
+  overflow: hidden;
+}
+
+.mobile-menu[hidden] {
+  display: none;
+}
+
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--background);
+}
+
+.mobile-nav,
+.mobile-nav__submenu {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mobile-nav__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  padding-block: 0.875rem;
+  font-size: var(--fs-h4);
+  font-weight: var(--weight-title);
+  letter-spacing: var(--ls-title);
+}
+
+/* The "More" row behaves like a link but toggles the group below it. */
+.mobile-nav__toggle {
+  width: 100%;
+  border-inline: 0;
+  border-top: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding-inline: 0;
+  font-family: inherit;
+  text-align: left;
+}
+
+.mobile-nav__chevron {
+  color: var(--muted-foreground);
+  transition: transform 0.25s var(--ease-out);
+}
+
+.mobile-nav__toggle[aria-expanded="true"] {
+  border-bottom-color: transparent;
+}
+
+.mobile-nav__toggle[aria-expanded="true"] .mobile-nav__chevron {
+  color: var(--accent);
+  transform: rotate(180deg);
+}
+
+.mobile-nav__submenu[hidden] {
+  display: none;
+}
+
+.mobile-nav__submenu {
+  display: grid;
+  gap: 0.125rem;
+  border-bottom: 1px solid var(--border);
+  padding-block: 0.25rem 0.75rem;
+  animation: mobile-submenu-in 0.22s var(--ease-out);
+}
+
+.mobile-nav__sublink {
+  display: block;
+  border-radius: var(--radius-control);
+  padding: 0.625rem 0.75rem;
+  color: var(--muted-foreground);
+  font-size: var(--fs-s);
+  font-weight: var(--weight-strong);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.mobile-nav__sublink:hover,
+.mobile-nav__sublink[aria-current="page"] {
+  background: var(--muted);
+  color: var(--foreground);
+}
+
+@keyframes mobile-submenu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-0.35rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ==========================================================================
+   Hero slideshow
+   ========================================================================== */
+
+/*
+ * Runs edge to edge under the header: no inset frame, no rounded corners, and
+ * a height tied to the viewport so the lead photograph is the first and only
+ * thing on screen.
+ */
+.hero {
+  position: relative;
+  display: flex;
+  min-height: 30rem;
+  overflow: hidden;
+  border-radius: var(--radius-block);
+  background: var(--muted);
+  color: #fff;
+  isolation: isolate;
+}
+
+@media (min-width: 48rem) {
+  .hero {
+    min-height: 38rem;
+  }
+}
+
+@media (min-width: 64rem) {
+  .hero {
+    min-height: min(46rem, calc(100svh - var(--header-height)));
+  }
+}
+
+.hero__media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  display: none;
+  opacity: 0;
+  transition:
+    opacity 0.7s ease,
+    display 0.7s allow-discrete;
+}
+
+.hero__media.is-active {
+  display: block;
+  opacity: 1;
+}
+
+@starting-style {
+  .hero__media.is-active {
+    opacity: 0;
+  }
+}
+
+.hero__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero__media::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0.4) 0%,
+    rgb(0 0 0 / 0.12) 32%,
+    rgb(0 0 0 / 0.78) 100%
+  );
+}
+
+.hero__ui {
+  display: flex;
+  width: 100%;
+  max-width: calc(var(--container) + var(--gutter) * 2);
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.25rem;
+  margin-inline: auto;
+  padding: 2.25rem var(--gutter) 1.75rem;
+  pointer-events: none;
+}
+
+.hero__stage {
+  position: relative;
+  width: 100%;
+  max-width: 46rem;
+  min-height: 16rem;
+}
+
+@media (min-width: 48rem) {
+  .hero__stage {
+    min-height: 19rem;
+  }
+}
+
+.hero__panel {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: none;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.875rem;
+  opacity: 0;
+  transform: translateY(2rem);
+  transition:
+    opacity 0.55s ease,
+    transform 0.55s var(--ease-out),
+    display 0.55s allow-discrete;
+}
+
+.hero__panel.is-active {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@starting-style {
+  .hero__panel.is-active {
+    opacity: 0;
+    transform: translateY(2rem);
+  }
+}
+
+.hero__panel > * {
+  pointer-events: auto;
+}
+
+.hero__title {
+  color: #fff;
+  font-size: var(--fs-display);
+  text-wrap: balance;
+}
+
+.hero__excerpt {
+  max-width: 34rem;
+  color: var(--ink-muted);
+}
+
+/*
+ * Slide controls: short horizontal bars in the bottom-right corner. Each is a
+ * button — the mark is 2px tall, the target around it is not — and the active
+ * one fills left to right over the autoplay interval.
+ */
+.hero__progress {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 0.75rem;
+  pointer-events: auto;
+}
+
+@media (max-width: 47.99rem) {
+  .hero__ui {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 1rem;
+  }
+
+  .hero__stage {
+    min-height: 0;
+  }
+
+  .hero__panel {
+    position: relative;
+    inset: auto;
+  }
+
+  /* Stacked panels would each claim height; only the active one participates. */
+  .hero__panel:not(.is-active) {
+    position: absolute;
+    inset: auto 0 0 0;
+  }
+
+  /* Stays in the corner once the lead stacks into a column. */
+  .hero__progress {
+    align-self: flex-end;
+    margin-bottom: 0;
+  }
+}
+
+.hero__progress-item {
+  position: relative;
+  width: 2.75rem;
+  height: 1.25rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* Track and fill, both centred in the button's hit area. */
+.hero__progress-item::before,
+.hero__progress-item::after {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 2px;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.hero__progress-item::before {
+  background: rgb(255 255 255 / 0.3);
+  transition: background-color 0.25s ease;
+}
+
+.hero__progress-item:hover::before {
+  background: rgb(255 255 255 / 0.6);
+}
+
+.hero__progress-item::after {
+  transform: translateY(-50%) scaleX(0);
+  transform-origin: left;
+  background: #fff;
+}
+
+.hero__progress-item.is-done::after {
+  transform: translateY(-50%) scaleX(1);
+}
+
+.hero__progress-item.is-active::after {
+  animation: hero-progress var(--hero-duration, 7s) linear forwards;
+}
+
+@keyframes hero-progress {
+  from {
+    transform: translateY(-50%) scaleX(0);
+  }
+  to {
+    transform: translateY(-50%) scaleX(1);
+  }
+}
+
+@media (min-width: 64rem) {
+  .hero__ui {
+    padding: 3rem var(--gutter) 2.25rem;
+  }
+}
+
+/* ==========================================================================
+   Article
+   ========================================================================== */
+
+.reading-progress {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 150;
+  height: 2px;
+  background: transparent;
+}
+
+.reading-progress__bar {
+  height: 100%;
+  width: var(--progress, 0%);
+  background: var(--accent);
+  transition: width 0.1s linear;
+}
+
+/* ==========================================================================
+   Article openings
+   --------------------------------------------------------------------------
+   Four treatments, chosen per story with the `heroLayout` frontmatter field:
+
+   - standard   type first, the cover inside the reading column
+   - banner     an edge-to-edge strip above the type
+   - cover      the photograph carries the headline
+   - immersive  the photograph fills the viewport and the header rides on it
+
+   All four set the same head block; only its placement, scale, and colour
+   change. The three full-bleed variants sit outside the centred column so they
+   run edge to edge without a viewport-width hack.
+   ========================================================================== */
+
+.posthead {
+  display: grid;
+  justify-items: start;
+  gap: 0.875rem;
+}
+
+.posthead__excerpt {
+  color: var(--muted-foreground);
+}
+
+/* On a photograph the block goes light in both colour themes: it sits on the
+   picture, not on the page, so `--muted-foreground` has nothing to sit against. */
+.posthead--onDark {
+  color: #fff;
+}
+
+/*
+ * Solid white all the way down, rather than the translucent ink-muted grey the
+ * cards and the homepage lead use for supporting text. A card sits on its own
+ * scrim over a crop the theme chose; an article opening sits on whichever
+ * photograph the story came with, and at that scale the grey stops reading as
+ * hierarchy and starts reading as the picture showing through the type.
+ */
+.posthead--onDark .posthead__excerpt,
+.posthead--onDark .meta,
+.posthead--onDark .meta__byline,
+.posthead--onDark .meta__conjunction {
+  color: #fff;
+}
+
+/* The immersive opening is the one place type is not aligned to the left edge of
+   the track, so the byline row has to be re-centred along with the block. */
+.posthead--center {
+  justify-items: center;
+  text-align: center;
+}
+
+.posthead--center .meta {
+  justify-content: center;
+}
+
+/* Photo credit, set as annotation rather than as prose. */
+.posthero__credit {
+  color: var(--muted-foreground);
+}
+
+/* ---------------------------------------------------------------- standard --- */
+
+.posthero-standard {
+  padding-block: 1.5rem 0;
+}
+
+/* `auto` inline margins matter here: `.container-reading` centres the figure and
+   a shorthand reset would knock it back to the left edge. */
+.posthero-standard__figure {
+  margin: 2.5rem auto 0;
+}
+
+.posthero-standard__media {
+  aspect-ratio: 3 / 2;
+}
+
+.posthero-standard__credit {
+  margin-top: 0.75rem;
+}
+
+/* ------------------------------------------------------------------ banner --- */
+
+.posthero-banner__figure {
+  margin: 0;
+}
+
+/* Square regardless of the radius tokens: a strip that runs off both edges of
+   the viewport has no corners to soften. */
+.posthero-banner__media {
+  height: clamp(13rem, 36vw, 26rem);
+  border-radius: 0;
+}
+
+/* Right-aligned on the wide track, so the credit reads as a margin note on the
+   strip above it rather than as the start of the article. */
+.posthero-banner__credit {
+  margin-top: 0.75rem;
+  text-align: right;
+}
+
+.posthero-banner__head {
+  padding-top: clamp(2rem, 4vw, 3rem);
+}
+
+/* ------------------------------------------------------------------- cover --- */
+
+.posthero-cover {
+  position: relative;
+  display: grid;
+  min-height: clamp(24rem, 72svh, 42rem);
+  align-content: end;
+  overflow: hidden;
+  background: var(--muted);
+  isolation: isolate;
+}
+
+.posthero-cover__media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.posthero-cover__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Weighted to the foot of the picture, where the headline sits, with just enough
+   at the top to hold the glass section tag. */
+.posthero-cover__media::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0.34) 0%,
+    rgb(0 0 0 / 0.08) 32%,
+    rgb(0 0 0 / 0.8) 100%
+  );
+}
+
+.posthero-cover__inner {
+  padding-block: clamp(2rem, 5vw, 3.5rem);
+}
+
+.posthero-cover__credit {
+  margin-top: 1.25rem;
+  color: #fff;
+}
+
+/* --------------------------------------------------------------- immersive --- */
+
+.posthero-immersive {
+  position: relative;
+  display: grid;
+  min-height: 100svh;
+  align-content: end;
+  overflow: hidden;
+  background: var(--muted);
+  isolation: isolate;
+}
+
+.posthero-immersive__media {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+
+.posthero-immersive__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/*
+ * Weighted to both ends and clear through the middle: the top keeps the overlaid
+ * header legible, the foot carries the headline and the title block, and the
+ * centre of the photograph — the reason the layout exists — is left alone.
+ */
+.posthero-immersive__media::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.52) 0%, rgb(0 0 0 / 0.12) 24%, rgb(0 0 0 / 0) 44%),
+    linear-gradient(
+      0deg,
+      rgb(0 0 0 / 0.84) 0%,
+      rgb(0 0 0 / 0.52) 26%,
+      rgb(0 0 0 / 0.14) 52%,
+      rgb(0 0 0 / 0) 72%
+    );
+}
+
+.posthero-immersive__inner {
+  padding-top: calc(var(--header-height) + 4rem);
+  padding-bottom: clamp(2.5rem, 6vw, 4.5rem);
+}
+
+/* Held to the reading measure and centred in the track, so the headline stays a
+   readable number of words per line at any viewport width. */
+.posthero-immersive__stage {
+  max-width: var(--reading);
+  margin-inline: auto;
+}
+
+.posthero-immersive__credit {
+  margin-top: 1.5rem;
+  color: #fff;
+  text-align: center;
+}
+
+/* ==========================================================================
+   Prose
+   ========================================================================== */
+
+.prose {
+  font-size: var(--fs-l);
+  line-height: 1.7;
+}
+
+.prose > * + * {
+  margin-top: 1.35rem;
+}
+
+.prose p,
+.prose ul,
+.prose ol {
+  color: color-mix(in srgb, var(--foreground) 92%, transparent);
+  text-wrap: pretty;
+}
+
+/* Tailwind's preflight strips list markers; the reading column wants them back. */
+.prose ul {
+  padding-left: 1.35rem;
+  list-style: disc;
+}
+
+.prose ol {
+  padding-left: 1.35rem;
+  list-style: decimal;
+}
+
+.prose li + li {
+  margin-top: 0.4rem;
+}
+
+.prose li::marker {
+  color: var(--accent);
+}
+
+.prose h2 {
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  scroll-margin-top: 6rem;
+  font-size: var(--fs-h2);
+  font-weight: var(--weight-title);
+  letter-spacing: var(--ls-title);
+  line-height: var(--lh-title);
+}
+
+.prose h3 {
+  margin-top: 2.25rem;
+  margin-bottom: 0.75rem;
+  scroll-margin-top: 6rem;
+  font-size: var(--fs-h3);
+  font-weight: var(--weight-title);
+  letter-spacing: var(--ls-title);
+  line-height: var(--lh-title);
+}
+
+.prose h4 {
+  margin-top: 1.75rem;
+  font-size: var(--fs-h4);
+  font-weight: var(--weight-title);
+  letter-spacing: var(--ls-title);
+}
+
+.prose a {
+  text-decoration: underline;
+  text-decoration-color: var(--accent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.22em;
+  transition: color 0.2s ease;
+}
+
+.prose a:hover {
+  color: var(--accent);
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+/* Pulled out with a rule rather than a filled panel — the reading column stays
+   paper all the way down. */
+.prose blockquote {
+  margin-inline: 0;
+  border-left: 2px solid var(--foreground);
+  padding: 0.2rem 0 0.2rem 1.5rem;
+  font-size: var(--fs-h4);
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+}
+
+.prose blockquote p {
+  margin: 0;
+}
+
+.prose blockquote p + p {
+  margin-top: 0.75rem;
+}
+
+.prose blockquote strong:first-child {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: var(--accent);
+  font-size: var(--fs-cap);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.prose code {
+  background: var(--muted);
+  padding: 0.12em 0.38em;
+  font-family: var(--font-mono);
+  font-size: 0.86em;
+}
+
+.prose img {
+  width: 100%;
+}
+
+/* Inline figures: an image plus its photo credit, set as annotation. */
+.prose figure {
+  margin: 2rem 0;
+}
+
+.prose figcaption {
+  margin-top: 0.75rem;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: var(--fs-cap);
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  text-transform: uppercase;
+}
+
+.prose figcaption a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin-block: 2.5rem;
+}
+
+.astro-code {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-block);
+  padding: 1.25rem 1.35rem;
+  font-size: var(--fs-s);
+  line-height: 1.7;
+}
+
+.astro-code code {
+  background: transparent;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* Shiki dual theme: light tokens by default, dark ones once dark is active. */
+.astro-code,
+.astro-code span {
+  color: var(--shiki-light);
+  background-color: var(--shiki-light-bg);
+  font-style: var(--shiki-light-font-style);
+  font-weight: var(--shiki-light-font-weight);
+  text-decoration: var(--shiki-light-text-decoration);
+}
+
+:root[data-theme="dark"] .astro-code,
+:root[data-theme="dark"] .astro-code span {
+  color: var(--shiki-dark);
+  /* Ignore Shiki's own dark background (github-dark's #24292e reads too light
+     against this theme's near-black surfaces) and blend into the page instead. */
+  background-color: var(--wash);
+  font-style: var(--shiki-dark-font-style);
+  font-weight: var(--shiki-dark-font-weight);
+  text-decoration: var(--shiki-dark-text-decoration);
+}
+
+/* ==========================================================================
+   Utilities
+   ========================================================================== */
+
+.hover-fade-group:hover > *:not(:hover) {
+  opacity: 0.55;
+}
+
+.hover-fade-group > * {
+  transition: opacity 0.25s ease;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.underline-hover {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  background-size: 0 1px;
+  padding-bottom: 1px;
+  transition: background-size 0.3s var(--ease-out);
+}
+
+.underline-hover:hover {
+  background-size: 100% 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
+
+/*
+ * Scroll reveal: elements are visible by default so content never depends on
+ * JavaScript. The init script only adds `can-reveal` to <html> when
+ * IntersectionObserver exists and the user hasn't asked for reduced motion,
+ * at which point `.reveal` elements start hidden and fade/rise in once
+ * observed entering the viewport (see BaseLayout.astro).
+ */
+.reveal {
+  opacity: 1;
+  transform: none;
+}
+
+html.can-reveal .reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition:
+    opacity 0.7s var(--ease-out),
+    transform 0.7s var(--ease-out);
+}
+
+html.can-reveal .reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+
+/* ==========================================================================
+   Page close
+   ========================================================================== */
+
+/*
+ * A page that ends on the subscribe band closes with one ink block instead of
+ * two look-alike cards: the band gives up its bottom corners and the frame gap
+ * below it, the footer gives up its top corners, and a hairline marks the
+ * seam. Pages that end on regular content keep the footer as its own card, so
+ * neither component needs to know what it was placed next to.
+ */
+main > [data-subscribe-band]:last-child {
+  padding-bottom: 0;
+}
+
+main > [data-subscribe-band]:last-child .frame-block {
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+/* Balances the seam: roughly the footer's own top padding sits below it. */
+main > [data-subscribe-band]:last-child .subscribe-band__inner {
+  padding-bottom: clamp(2.5rem, 5vw, 3.5rem);
+}
+
+main:has(> [data-subscribe-band]:last-child) + [data-site-footer] {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+main:has(> [data-subscribe-band]:last-child) + [data-site-footer] .frame-block {
+  border-start-start-radius: 0;
+  border-start-end-radius: 0;
+  border-top: 1px solid rgb(255 255 255 / 0.12);
+}
+
+/* The band directly above already asks for the address. */
+main:has(> [data-subscribe-band]:last-child) + [data-site-footer] .subscribe-form {
+  display: none;
+}

@@ -1,0 +1,40 @@
+---
+import { Image } from "astro:assets";
+import SwapText from "@/components/ui/SwapText.astro";
+import { categorySlug, type Category, type Post } from "@/lib/posts";
+
+interface Props {
+  category: Category;
+  count: number;
+  /** Newest post in the category — its cover doubles as the tile artwork. */
+  cover?: Post["data"]["cover"];
+  class?: string;
+}
+
+const { category, count, cover, class: className = "" } = Astro.props;
+---
+
+<a class:list={["tile", className]} href={`/category/${categorySlug(category)}/`}>
+  {
+    cover && (
+      <div class="tile__media">
+        <Image
+          src={cover.src}
+          alt=""
+          widths={[320, 480, 700, 900]}
+          sizes="(min-width: 64rem) 18vw, (min-width: 40rem) 34vw, 56vw"
+          loading="lazy"
+          decoding="async"
+        />
+      </div>
+    )
+  }
+  <div class="tile__top">
+    <span class="count-chip">{count} {count === 1 ? "post" : "posts"}</span>
+  </div>
+  <div class="tile__body scrim">
+    <span class="txt-h4">
+      <SwapText text={category} />
+    </span>
+  </div>
+</a>

@@ -1,0 +1,153 @@
+---
+import { Image } from "astro:assets";
+import PostHeroHead from "@/components/PostHeroHead.astro";
+import { heroLayoutFor, type Post } from "@/lib/posts";
+
+interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const data = post.data;
+const layout = heroLayoutFor(post);
+/** Posts can opt out of the cover image and run as a text-only document. */
+const showCover = data.cover.showInPost ?? true;
+/** Requested widths for the three full-bleed openings, which all run to 100vw. */
+const bleedWidths = [720, 1080, 1440, 1920, 2400];
+---
+
+{
+  /* Type first, photograph second, both inside the reading column. The quiet
+     default: nothing is cropped and the headline is the first thing read. */
+  layout === "standard" && (
+    <header class="posthero-standard">
+      <div class="container-reading">
+        <PostHeroHead post={post} />
+      </div>
+
+      {showCover && (
+        <figure class="container-reading posthero-standard__figure">
+          <div class="media posthero-standard__media">
+            <Image
+              src={data.cover.src}
+              alt={data.cover.alt}
+              widths={[640, 960, 1280, 1640, 2000]}
+              sizes="(min-width: 54rem) 820px, calc(100vw - 2rem)"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+          <figcaption class="txt-cap posthero__credit posthero-standard__credit">
+            Photo:{" "}
+            <a class="underline-hover" href={data.cover.creditUrl} rel="noreferrer">
+              {data.cover.creditName}
+            </a>
+          </figcaption>
+        </figure>
+      )}
+    </header>
+  )
+}
+
+{
+  /* An edge-to-edge strip above the type. The photograph opens the page without
+     taking it over, and the credit sits with the strip it belongs to. */
+  layout === "banner" && (
+    <header class="posthero-banner">
+      <figure class="posthero-banner__figure">
+        <div class="media posthero-banner__media">
+          <Image
+            src={data.cover.src}
+            alt={data.cover.alt}
+            widths={bleedWidths}
+            sizes="100vw"
+            loading="eager"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </div>
+        {/* On the reading measure, so the credit closes on the same right edge as
+            the article body rather than out at the viewport. */}
+        <figcaption class="container-reading txt-cap posthero__credit posthero-banner__credit">
+          Photo:{" "}
+          <a class="underline-hover" href={data.cover.creditUrl} rel="noreferrer">
+            {data.cover.creditName}
+          </a>
+        </figcaption>
+      </figure>
+
+      <div class="container-reading posthero-banner__head">
+        <PostHeroHead post={post} />
+      </div>
+    </header>
+  )
+}
+
+{
+  /* The photograph carries the headline. Text is white in both colour themes
+     because it sits on the picture rather than on the page. */
+  layout === "cover" && (
+    <header class="posthero-cover">
+      <div class="posthero-cover__media">
+        <Image
+          src={data.cover.src}
+          alt={data.cover.alt}
+          widths={bleedWidths}
+          sizes="100vw"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </div>
+
+      {/* The reading measure, not the wide track: the headline then starts on the
+          same left edge as the article body underneath it. */}
+      <div class="container-reading posthero-cover__inner">
+        <PostHeroHead post={post} onDark />
+        <p class="txt-cap posthero__credit posthero-cover__credit">
+          Photo:{" "}
+          <a class="underline-hover" href={data.cover.creditUrl} rel="noreferrer">
+            {data.cover.creditName}
+          </a>
+        </p>
+      </div>
+    </header>
+  )
+}
+
+{
+  /*
+   * The photograph fills the viewport from the first pixel, with the header
+   * riding on it — the article page renders the bar in overlay mode for this one.
+   * The headline sits centred in the lower half, which is the one place in the
+   * theme where type is not aligned to the left edge of the track: nothing else
+   * is on screen to align to.
+   */
+  layout === "immersive" && (
+    <header class="posthero-immersive">
+      <div class="posthero-immersive__media">
+        <Image
+          src={data.cover.src}
+          alt={data.cover.alt}
+          widths={bleedWidths}
+          sizes="100vw"
+          loading="eager"
+          fetchpriority="high"
+          decoding="async"
+        />
+      </div>
+
+      <div class="container posthero-immersive__inner">
+        <div class="posthero-immersive__stage">
+          <PostHeroHead post={post} onDark display center />
+          <p class="txt-cap posthero__credit posthero-immersive__credit">
+            Photo:{" "}
+            <a class="underline-hover" href={data.cover.creditUrl} rel="noreferrer">
+              {data.cover.creditName}
+            </a>
+          </p>
+        </div>
+      </div>
+    </header>
+  )
+}

@@ -1,0 +1,29 @@
+---
+import Byline from "@/components/ui/Byline.astro";
+import { formatDate, readMinutes, type Post } from "@/lib/posts";
+
+interface Props {
+  post: Post;
+  onDark?: boolean;
+  showReadTime?: boolean;
+  /** Turn the byline off where the grid already reads as one section's work. */
+  showByline?: boolean;
+  class?: string;
+}
+
+const {
+  post,
+  onDark = false,
+  showReadTime = false,
+  showByline = true,
+  class: className = "",
+} = Astro.props;
+const { date } = post.data;
+---
+
+<div class:list={["meta", onDark && "meta--onDark", className]}>
+  {/* One name on a card, whatever the byline: coauthors are counted, not printed. */}
+  {showByline && <Byline post={post} onDark={onDark} max={1} />}
+  <time class="meta__fact" datetime={date.toISOString()}>{formatDate(date)}</time>
+  {showReadTime && <span class="meta__fact">{readMinutes(post)} min read</span>}
+</div>

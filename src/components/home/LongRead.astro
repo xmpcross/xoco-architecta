@@ -1,0 +1,52 @@
+---
+import { Image } from "astro:assets";
+import CategoryTag from "@/components/CategoryTag.astro";
+import Icon from "@/components/ui/Icon.astro";
+import PostMeta from "@/components/ui/PostMeta.astro";
+import SwapText from "@/components/ui/SwapText.astro";
+import { postHref, type Post } from "@/lib/posts";
+
+/**
+ * One story given a full-width split: cover on one side, type on the other.
+ * The cover is not a link — the headline and the closing link both are — so
+ * there is one obvious target per row and nothing overlapping the photograph.
+ */
+interface Props {
+  post: Post;
+  headingLevel?: "h2" | "h3";
+}
+
+const { post, headingLevel = "h2" } = Astro.props;
+const Heading = headingLevel;
+const href = postHref(post);
+---
+
+<article class="longread zoom-host">
+  <div class="media media--wide longread__media">
+    <Image
+      src={post.data.cover.src}
+      alt={post.data.cover.alt}
+      widths={[640, 960, 1280, 1600, 2000]}
+      sizes="(min-width: 64rem) 52vw, 96vw"
+      loading="lazy"
+      decoding="async"
+    />
+  </div>
+
+  <div class="longread__body">
+    <div class="tag-row">
+      <CategoryTag category={post.data.category} variant="surface" />
+    </div>
+    <Heading class="longread__title">
+      <a href={href}>{post.data.title}</a>
+    </Heading>
+    <p class="txt-l txt-dim longread__excerpt">{post.data.excerpt}</p>
+    <PostMeta post={post} showReadTime />
+    <a class="section-link txt-mono" href={href}>
+      <SwapText text="Read the piece" />
+      <span class="section-link__arrow">
+        <Icon name="arrow-right" size={14} />
+      </span>
+    </a>
+  </div>
+</article>

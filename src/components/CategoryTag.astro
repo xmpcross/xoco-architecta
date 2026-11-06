@@ -1,0 +1,25 @@
+---
+import SwapText from "@/components/ui/SwapText.astro";
+import { categorySlug, type Category } from "@/lib/posts";
+
+interface Props {
+  category: Category;
+  /** `glass` sits on cover imagery, `surface` sits on paper. */
+  variant?: "glass" | "surface";
+  linked?: boolean;
+  class?: string;
+}
+
+const { category, variant = "glass", linked = true, class: className = "" } = Astro.props;
+const classes = ["tag", variant === "surface" && "tag--surface", className];
+---
+
+{
+  linked ? (
+    <a class:list={classes} href={`/category/${categorySlug(category)}/`}>
+      <SwapText text={category} />
+    </a>
+  ) : (
+    <span class:list={classes}>{category}</span>
+  )
+}

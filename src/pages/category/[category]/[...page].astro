@@ -1,0 +1,201 @@
+---
+import { getCollection } from "astro:content";
+import type { GetStaticPaths, Page } from "astro";
+import NewsletterSignup from "@/components/NewsletterSignup.astro";
+import PageHeader from "@/components/PageHeader.astro";
+import Pagination from "@/components/Pagination.astro";
+import PostCard from "@/components/PostCard.astro";
+import SiteFooter from "@/components/SiteFooter.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import SidebarCategories from "@/components/sidebar/SidebarCategories.astro";
+import SidebarPosts from "@/components/sidebar/SidebarPosts.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { categoryLayouts, categoryMeta } from "@/config/categories";
+import { cardSizes } from "@/lib/imageSizes";
+import {
+  categories,
+  categoryFromSlug,
+  categorySlug,
+  formatDate,
+  getByCategory,
+  visiblePosts,
+  type Category,
+  type Post,
+} from "@/lib/posts";
+
+export const getStaticPaths = (async ({ paginate }) => {
+  const allPosts = visiblePosts(await getCollection("posts"));
+
+  return categories.flatMap((category) => {
+    const posts = getByCategory(allPosts, category);
+
+    return paginate(posts, {
+      pageSize: 12,
+      params: { category: categorySlug(category) },
+      props: { category, allPosts },
+    });
+  });
+}) satisfies GetStaticPaths;
+
+interface Props {
+  category: Category;
+  allPosts: Post[];
+  page: Page<Post>;
+}
+
+const { category, allPosts, page } = Astro.props;
+const categoryFromUrl = categoryFromSlug(Astro.params.category ?? "");
+const cat = categoryFromUrl ?? category;
+const posts = page.data;
+const allCategoryPosts = getByCategory(allPosts, cat);
+const layout = categoryLayouts[cat];
+const lead = layout === "featured" && page.currentPage === 1 ? posts[0] : undefined;
+const remainingPosts = lead ? posts.slice(1) : posts;
+const sideRail = visiblePosts(allPosts)
+  .filter((post) => post.data.category !== cat)
+  .slice(0, 5);
+const title = page.currentPage === 1 ? `${cat} posts` : `${cat} posts - Page ${page.currentPage}`;
+const description = categoryMeta[cat].description;
+const withTrailingSlash = (url: string | undefined) => (url && !url.endsWith("/") ? `${url}/` : url);
+const prevUrl = withTrailingSlash(page.url.prev);
+const nextUrl = withTrailingSlash(page.url.next);
+const latest = allCategoryPosts[0];
+const meta = [
+  `${page.total} ${page.total === 1 ? "post" : "posts"}`,
+  latest ? `Latest ${formatDate(latest.data.date)}` : null,
+]
+  .filter(Boolean)
+  .join(" · ");
+---
+
+<BaseLayout title={title} description={description} prevUrl={prevUrl} nextUrl={nextUrl}>
+  <SiteHeader posts={allPosts} />
+  <main id="content">
+    <div class="container">
+      <PageHeader title={cat} description={description} meta={meta} />
+    </div>
+
+    <section class="container section section-top">
+      <div class="with-sidebar">
+        <div class="min-w-0">
+          {
+            layout === "featured" && (
+              <div class="category-featured">
+                {lead && (
+                  <PostCard
+                    post={lead}
+                    variant="overlay"
+                    size="tall"
+                    headingLevel="h2"
+                    showExcerpt
+                    eager
+                    sizes={cardSizes.overlayMain}
+                  />
+                )}
+                <div class="grid-cards">
+                  {remainingPosts.map((post, index) => (
+                    <PostCard
+                      post={post}
+                      headingLevel="h2"
+                      eager={index < 2}
+                      sizes={cardSizes.gridMain}
+                    />
+                  ))}
+                </div>
+              </div>
+            )
+          }
+
+          {
+            layout === "grid" && (
+              <div class="grid-cards">
+                {posts.map((post, index) => (
+                  <PostCard
+                    post={post}
+                    headingLevel="h2"
+                    eager={index < 2}
+                    sizes={cardSizes.gridMain}
+                  />
+                ))}
+              </div>
+            )
+          }
+
+          {
+            layout === "list" && (
+              <div class="category-list">
+                {posts.map((post, index) => (
+                  <PostCard
+                    post={post}
+                    variant="list"
+                    headingLevel="h2"
+                    eager={index < 3}
+                  />
+                ))}
+              </div>
+            )
+          }
+
+          {posts.length === 0 && <p class="txt-m txt-dim">More posts are coming soon.</p>}
+
+          <Pagination
+            prevUrl={prevUrl}
+            nextUrl={nextUrl}
+            currentPage={page.currentPage}
+            lastPage={page.lastPage}
+            label={`${cat} pagination`}
+          />
+        </div>
+
+        <aside class="sidebar-stack category-sidebar" aria-label="More from the journal">
+          <SidebarPosts
+            title="Elsewhere on the site"
+            posts={sideRail}
+            id="category-elsewhere"
+            eagerCount={2}
+          />
+          <SidebarCategories
+            title="Other sections"
+            posts={allPosts}
+            current={cat}
+            id="category-sections"
+          />
+        </aside>
+      </div>
+    </section>
+
+    <NewsletterSignup id="category-newsletter" />
+  </main>
+  <SiteFooter />
+</BaseLayout>
+
+<style>
+  .category-featured {
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  .category-list {
+    display: grid;
+    gap: 2.5rem;
+  }
+
+  /* Once the sidebar sits beside the posts it is divided from them by a single
+     rule, so the blocks inside it drop their card chrome and sit directly on
+     the page. Below this width the column stacks under the posts, where the
+     panels still do the dividing. */
+  @media (min-width: 64rem) {
+    .category-sidebar {
+      gap: 2.5rem;
+      padding-left: 2rem;
+      border-left: var(--hairline);
+    }
+
+    .category-sidebar :global(.panel) {
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: none;
+    }
+  }
+</style>

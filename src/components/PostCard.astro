@@ -1,0 +1,212 @@
+---
+import { Image } from "astro:assets";
+import CategoryTag from "@/components/CategoryTag.astro";
+import PostMeta from "@/components/ui/PostMeta.astro";
+import { cardSizes } from "@/lib/imageSizes";
+import { formatDate, postHref, type Post } from "@/lib/posts";
+
+interface Props {
+  post: Post;
+  /**
+   * `primary` — square cover above the copy (the default grid card)
+   * `overlay` — copy laid over the cover inside a scrim
+   * `compact` — thumbnail beside a short title, for sidebars
+   * `list`    — wide editorial row
+   */
+  variant?: "primary" | "overlay" | "compact" | "list";
+  /** Overlay height: `short` for wide rails, `tall` for sidebar features. */
+  size?: "short" | "default" | "tall";
+  /** Loads the cover eagerly — set it on cards that render above the fold. */
+  eager?: boolean;
+  showExcerpt?: boolean;
+  /** Leaves the date to carry the meta row on its own, for dense grids. */
+  showByline?: boolean;
+  headingLevel?: "h2" | "h3";
+  /**
+   * Overrides the variant's default `sizes`. Set it wherever a card renders at
+   * a width its default does not describe — chiefly a grid or an overlay inside
+   * the narrower `.with-sidebar` main column. See `src/lib/imageSizes.ts`.
+   */
+  sizes?: string;
+  class?: string;
+}
+
+const {
+  post,
+  variant = "primary",
+  size = "default",
+  eager = false,
+  showExcerpt = false,
+  showByline = true,
+  headingLevel = "h3",
+  sizes,
+  class: className = "",
+} = Astro.props;
+
+const href = postHref(post);
+const data = post.data;
+const image = data.cover;
+const loading = eager ? "eager" : "lazy";
+const Heading = headingLevel;
+const coverSizes =
+  sizes ??
+  (variant === "overlay"
+    ? cardSizes.overlayRail
+    : variant === "list"
+      ? cardSizes.listMedia
+      : cardSizes.gridWide);
+
+/**
+ * The overlay is the one card whose frame has no fixed ratio: it is as wide as
+ * its column and at least `min-height` tall. Where that box is proportionally
+ * taller than the photograph, `object-fit: cover` matches the height and spills
+ * the width past the frame, so the pixels actually painted are wider than the
+ * `sizes` above describes. `coverWidth` adds that painted width as a floor. The
+ * square and wide frames need no such floor: they ask the image service for the
+ * exact ratio they render at, further down.
+ */
+const overlayMinHeight = size === "tall" ? 26 : size === "short" ? 18 : 19;
+const coverWidth = (overlayMinHeight * image.src.width) / image.src.height;
+const overlaySizes = coverSizes
+  .split(/,(?![^()]*\))/)
+  .map((entry) => {
+    const [, condition = "", value = entry.trim()] =
+      entry.trim().match(/^(\([^)]*\))\s*(.+)$/) ?? [];
+    return `${condition ? `${condition} ` : ""}max(${value}, ${coverWidth.toFixed(2)}rem)`;
+  })
+  .join(", ");
+---
+
+{
+  variant === "primary" && (
+    <article class:list={["card zoom-host", className]}>
+      <div class="card__media">
+        <div class="media media--square">
+          <Image
+            src={image.src}
+            alt={image.alt}
+            width={1100}
+            height={1100}
+            fit="cover"
+            widths={[400, 600, 800, 1100]}
+            sizes={coverSizes}
+            loading={loading}
+            decoding="async"
+          />
+        </div>
+        <div class="card__tags tag-row">
+          <CategoryTag category={data.category} />
+        </div>
+      </div>
+      <a class="card__link" href={href} aria-label={data.title} />
+      <div class="card__body">
+        <Heading class="txt-h4 card__title">{data.title}</Heading>
+        {showExcerpt && <p class="txt-s txt-dim line-clamp-2">{data.excerpt}</p>}
+        <PostMeta post={post} showByline={showByline} class="card__meta" />
+      </div>
+    </article>
+  )
+}
+
+{
+  variant === "overlay" && (
+    <article
+      class:list={[
+        "card-overlay",
+        size === "tall" && "card-overlay--tall",
+        size === "short" && "card-overlay--short",
+        className,
+      ]}
+    >
+      <div class="card-overlay__media">
+        <Image
+          src={image.src}
+          alt={image.alt}
+          widths={[480, 720, 960, 1280, 1700]}
+          sizes={overlaySizes}
+          loading={loading}
+          decoding="async"
+        />
+      </div>
+      <div class="card-overlay__tags tag-row">
+        <CategoryTag category={data.category} />
+      </div>
+      <a class="card__link" href={href} aria-label={data.title} />
+      <div class="card-overlay__body scrim">
+        <Heading class="txt-h4 card-overlay__title">{data.title}</Heading>
+        {showExcerpt && <p class="txt-s card-overlay__excerpt line-clamp-2">{data.excerpt}</p>}
+        <PostMeta post={post} onDark showByline={showByline} />
+      </div>
+    </article>
+  )
+}
+
+{
+  variant === "compact" && (
+    <article class:list={["card-compact", className]}>
+      <div class="card-compact__media">
+        <Image
+          src={image.src}
+          alt={image.alt}
+          width={160}
+          height={160}
+          loading={loading}
+          decoding="async"
+        />
+      </div>
+      <a class="card__link" href={href} aria-label={data.title} />
+      <div class="card__body" style="gap:0.4rem">
+        <Heading class="txt-h6 card__title">{data.title}</Heading>
+        <p class="txt-cap txt-dim">
+          <time datetime={data.date.toISOString()}>{formatDate(data.date)}</time>
+        </p>
+      </div>
+    </article>
+  )
+}
+
+{
+  variant === "list" && (
+    <article class:list={["card zoom-host card--list", className]}>
+      <div class="card__media">
+        <div class="media media--wide">
+          <Image
+            src={image.src}
+            alt={image.alt}
+            width={900}
+            height={563}
+            fit="cover"
+            widths={[360, 520, 720, 900]}
+            sizes={coverSizes}
+            loading={loading}
+            decoding="async"
+          />
+        </div>
+        <div class="card__tags tag-row">
+          <CategoryTag category={data.category} />
+        </div>
+      </div>
+      <a class="card__link" href={href} aria-label={data.title} />
+      <div class="card__body">
+        <Heading class="txt-h3 card__title">{data.title}</Heading>
+        <p class="txt-s txt-dim line-clamp-2">{data.excerpt}</p>
+        <PostMeta post={post} showReadTime showByline={showByline} class="card__meta" />
+      </div>
+    </article>
+  )
+}
+
+<style>
+  .card--list {
+    gap: 1.25rem;
+  }
+
+  @media (min-width: 48rem) {
+    .card--list {
+      display: grid;
+      grid-template-columns: minmax(0, 18rem) minmax(0, 1fr);
+      align-items: center;
+    }
+  }
+
+</style>

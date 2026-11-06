@@ -1,0 +1,432 @@
+---
+import { getCollection, render } from "astro:content";
+import NewsletterSignup from "@/components/NewsletterSignup.astro";
+import PostCard from "@/components/PostCard.astro";
+import PostHero from "@/components/PostHero.astro";
+import Rail from "@/components/Rail.astro";
+import SectionHeader from "@/components/SectionHeader.astro";
+import SiteFooter from "@/components/SiteFooter.astro";
+import SiteHeader from "@/components/SiteHeader.astro";
+import Avatar from "@/components/ui/Avatar.astro";
+import Icon from "@/components/ui/Icon.astro";
+import SwapText from "@/components/ui/SwapText.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import {
+  authorSlug,
+  categorySlug,
+  formatDate,
+  getRelated,
+  heroLayoutFor,
+  postBylines,
+  postSlug,
+  tagSlug,
+  visiblePosts,
+  type Post,
+} from "@/lib/posts";
+import { siteConfig } from "@/config/site";
+
+export async function getStaticPaths() {
+  const allPosts = visiblePosts(await getCollection("posts"));
+  return allPosts.map((post) => ({
+    params: { slug: postSlug(post) },
+    props: { post, allPosts },
+  }));
+}
+
+interface Props {
+  post: Post;
+  allPosts: Post[];
+}
+
+const { post, allPosts } = Astro.props;
+const { Content } = await render(post);
+const related = getRelated(allPosts, post);
+const data = post.data;
+const slug = postSlug(post);
+const layout = heroLayoutFor(post);
+/**
+ * The immersive opening starts at the very top of the page, so the bar rides on
+ * the photograph instead of sitting above it — and the breadcrumb row, which
+ * belongs on paper, steps aside for every opening that leads with a picture.
+ */
+const overlayHeader = layout === "immersive";
+const showBreadcrumbs = layout === "standard";
+const categoryHref = `/category/${categorySlug(data.category)}/`;
+/** Lead author first, then coauthors: the article page prints every name. */
+const bylines = postBylines(post).map((byline) => ({
+  ...byline,
+  href: `/author/${authorSlug(byline.name)}/`,
+}));
+const articleUrl = new URL(`/post/${slug}/`, siteConfig.siteUrl).toString();
+const absoluteImageUrl = new URL(data.cover.src.src, siteConfig.siteUrl).toString();
+const encodedArticleUrl = encodeURIComponent(articleUrl);
+const encodedTitle = encodeURIComponent(data.title);
+const shareLinks: { label: string; icon: "twitter-x" | "facebook" | "linkedin"; href: string }[] = [
+  {
+    label: "X",
+    icon: "twitter-x",
+    href: `https://twitter.com/intent/tweet?url=${encodedArticleUrl}&text=${encodedTitle}`,
+  },
+  {
+    label: "Facebook",
+    icon: "facebook",
+    href: `https://www.facebook.com/sharer/sharer.php?u=${encodedArticleUrl}`,
+  },
+  {
+    label: "LinkedIn",
+    icon: "linkedin",
+    href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedArticleUrl}`,
+  },
+];
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "Article",
+  headline: data.title,
+  description: data.excerpt,
+  image: absoluteImageUrl,
+  datePublished: data.date.toISOString(),
+  dateModified: (data.updatedDate ?? data.date).toISOString(),
+  author: bylines.map((byline) => ({ "@type": "Person", name: byline.name })),
+  publisher: { "@type": "Organization", name: siteConfig.authorName },
+  mainEntityOfPage: articleUrl,
+};
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.excerpt}
+  image={absoluteImageUrl}
+  type="article"
+  structuredData={structuredData}
+>
+  <SiteHeader posts={allPosts} overlay={overlayHeader} />
+
+  <div class="reading-progress" aria-hidden="true">
+    <div class="reading-progress__bar" data-reading-progress></div>
+  </div>
+
+  <main id="content">
+    <article data-article>
+      {
+        showBreadcrumbs && (
+          <nav class="container-reading post-breadcrumbs txt-mono" aria-label="Breadcrumb">
+            <a class="underline-hover" href="/">
+              Home
+            </a>
+            <span aria-hidden="true">/</span>
+            <a class="underline-hover" href={categoryHref}>
+              {data.category}
+            </a>
+          </nav>
+        )
+      }
+
+      <PostHero post={post} />
+
+      <div class="container-reading post-body">
+        <div class="prose">
+          <Content />
+        </div>
+
+        {
+          data.updatedDate && (
+            <p class="txt-xs txt-dim post-updated">
+              Updated{" "}
+              <time datetime={data.updatedDate.toISOString()}>{formatDate(data.updatedDate, "long")}</time>
+            </p>
+          )
+        }
+
+        {/* One rule closes the story; tags, byline and share stack below it as
+            labelled blocks rather than three fenced-off sections. */}
+        <footer class="post-footer">
+          {
+            data.tags.length > 0 && (
+              <section class="post-footer__block" aria-labelledby="post-tags-title">
+                <p id="post-tags-title" class="txt-cap txt-dim post-footer__label">
+                  Tags
+                </p>
+                <ul class="post-tags">
+                  {data.tags.map((tag) => (
+                    <li>
+                      <a class="tag tag--surface" href={`/tag/${tagSlug(tag)}/`}>
+                        <SwapText text={tag} />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )
+          }
+
+          <section class="post-footer__block" aria-labelledby="post-authors-title">
+            <p id="post-authors-title" class="txt-cap txt-dim post-footer__label">
+              {bylines.length > 1 ? "Authors" : "Author"}
+            </p>
+            <div class="post-authors">
+              {
+                bylines.map((byline) => (
+                  <div class="post-author">
+                    <Avatar name={byline.name} size="lg" />
+                    <div>
+                      <p class="txt-h4">
+                        <a class="underline-hover" href={byline.href}>
+                          {byline.name}
+                        </a>
+                      </p>
+                      <p class="txt-s txt-dim">{byline.role}</p>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </section>
+
+          <section class="post-footer__block" role="group" aria-labelledby="post-share-title">
+            <p id="post-share-title" class="txt-cap txt-dim post-footer__label">Share</p>
+            <div class="post-share__links">
+              {
+                shareLinks.map((link) => (
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    class="icon-btn"
+                    aria-label={`Share ${data.title} on ${link.label}`}
+                  >
+                    <Icon name={link.icon} size={18} />
+                  </a>
+                ))
+              }
+              <button
+                type="button"
+                class="icon-btn"
+                data-copy-link
+                data-copy-url={articleUrl}
+                aria-label={`Copy link to ${data.title}`}
+              >
+                <Icon name="link" />
+              </button>
+              <span class="txt-cap txt-dim" aria-live="polite" data-copy-status></span>
+            </div>
+          </section>
+        </footer>
+      </div>
+    </article>
+
+    {
+      related.length > 0 && (
+        <section class="container section section-top" aria-labelledby="post-related">
+          <SectionHeader
+            title="Keep reading"
+            href="/posts/"
+            linkLabel="All posts"
+            id="post-related"
+          />
+          <Rail label="Related stories" columns={3} itemWidth="82%" itemWidthSm="52%">
+            {related.map((item) => (
+              <PostCard post={item} variant="overlay" size="short" />
+            ))}
+          </Rail>
+        </section>
+      )
+    }
+
+    <NewsletterSignup id="post-newsletter" />
+  </main>
+  <SiteFooter />
+
+  <script is:inline>
+    (() => {
+      const article = document.querySelector("[data-article]");
+      const progress = document.querySelector("[data-reading-progress]");
+
+      if (article && progress) {
+        let ticking = false;
+
+        const update = () => {
+          const rect = article.getBoundingClientRect();
+          const total = rect.height - window.innerHeight;
+          const read = total > 0 ? Math.min(Math.max(-rect.top / total, 0), 1) : 0;
+          progress.style.setProperty("--progress", `${(read * 100).toFixed(2)}%`);
+          ticking = false;
+        };
+
+        update();
+        window.addEventListener(
+          "scroll",
+          () => {
+            if (ticking) return;
+            ticking = true;
+            window.requestAnimationFrame(update);
+          },
+          { passive: true },
+        );
+        window.addEventListener("resize", update, { passive: true });
+      }
+
+      document.querySelectorAll("[data-copy-link]").forEach((copyLinkButton) => {
+        const copyLinkStatus = copyLinkButton.parentElement?.querySelector("[data-copy-status]");
+
+        copyLinkButton.addEventListener("click", async () => {
+          const url = copyLinkButton.getAttribute("data-copy-url");
+          if (!url) return;
+
+          try {
+            if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+
+            await navigator.clipboard.writeText(url);
+
+            if (copyLinkStatus) copyLinkStatus.textContent = "Link copied";
+          } catch {
+            if (copyLinkStatus) copyLinkStatus.textContent = "Copy failed";
+          }
+        });
+      });
+
+      document.querySelectorAll(".prose pre").forEach((pre, index) => {
+        if (pre.closest(".code-copy-frame")) return;
+
+        const code = pre.querySelector("code");
+        const wrapper = document.createElement("div");
+        const button = document.createElement("button");
+        const status = document.createElement("span");
+        const labelId = `code-copy-${index}`;
+
+        wrapper.className = "code-copy-frame";
+        button.type = "button";
+        button.className = "code-copy-button";
+        button.setAttribute("aria-describedby", labelId);
+        button.textContent = "Copy";
+        status.id = labelId;
+        status.className = "sr-only";
+        status.setAttribute("aria-live", "polite");
+
+        pre.parentNode?.insertBefore(wrapper, pre);
+        wrapper.append(pre, button, status);
+
+        button.addEventListener("click", async () => {
+          try {
+            if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
+
+            await navigator.clipboard.writeText(code?.textContent ?? pre.textContent ?? "");
+            button.textContent = "Copied";
+            status.textContent = "Code copied";
+            window.setTimeout(() => {
+              button.textContent = "Copy";
+            }, 1800);
+          } catch {
+            button.textContent = "Failed";
+            status.textContent = "Copy failed";
+            window.setTimeout(() => {
+              button.textContent = "Copy";
+            }, 1800);
+          }
+        });
+      });
+    })();
+  </script>
+
+  <style>
+    .post-breadcrumbs {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      padding-block: 1.25rem;
+      color: var(--muted-foreground);
+    }
+
+    .post-body {
+      padding-top: 3rem;
+      padding-bottom: 1rem;
+    }
+
+    .post-updated {
+      margin-top: 2rem;
+    }
+
+    /* The single rule that closes the article. Everything below it — tags,
+       byline, share — is spaced apart rather than fenced off with more lines. */
+    .post-footer {
+      border-top: 1px solid var(--border);
+      margin-top: 3rem;
+      padding-top: 2rem;
+    }
+
+    /* Tags, byline and share, one under another, each under its own label. */
+    .post-footer__block + .post-footer__block {
+      margin-top: 2.25rem;
+    }
+
+    .post-footer__label {
+      margin: 0 0 0.75rem;
+    }
+
+    .post-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .post-share__links {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* One block per byline: a solo author keeps the single row it always had,
+       and a coauthored post sits them side by side once there is room. */
+    .post-authors {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem 2rem;
+    }
+
+    .post-author {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .post-author p + p {
+      margin-top: 0.15rem;
+    }
+
+    /* Code copy affordance, injected by the script above. */
+    .prose :global(.code-copy-frame) {
+      position: relative;
+    }
+
+    .prose :global(.code-copy-frame pre) {
+      padding-top: 3rem;
+    }
+
+    .prose :global(.code-copy-button) {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--muted-foreground);
+      cursor: pointer;
+      padding: 0.25rem 0.55rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 600;
+      transition:
+        border-color 0.18s ease,
+        color 0.18s ease;
+    }
+
+    .prose :global(.code-copy-button:hover),
+    .prose :global(.code-copy-button:focus-visible) {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+  </style>
+</BaseLayout>

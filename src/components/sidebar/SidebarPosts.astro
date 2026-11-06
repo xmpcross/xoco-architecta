@@ -1,0 +1,46 @@
+---
+import PostCard from "@/components/PostCard.astro";
+import type { Post } from "@/lib/posts";
+
+interface Props {
+  title: string;
+  posts: Post[];
+  id?: string;
+  /**
+   * How many leading thumbnails to load eagerly. Only the first couple of rows
+   * of a sidebar block land above the fold, so this is a count rather than a
+   * flag for the whole list.
+   */
+  eagerCount?: number;
+}
+
+const { title, posts, id = "sidebar-posts-title", eagerCount = 0 } = Astro.props;
+---
+
+{
+  posts.length > 0 && (
+    <section class="panel sidebar-posts" aria-labelledby={id}>
+      <h2 id={id} class="txt-h5">
+        {title}
+      </h2>
+      <div class="sidebar-posts__list hover-fade-group">
+        {posts.map((post, index) => (
+          <PostCard post={post} variant="compact" eager={index < eagerCount} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+<style>
+  .sidebar-posts {
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .sidebar-posts__list {
+    display: grid;
+    gap: 1rem;
+  }
+</style>

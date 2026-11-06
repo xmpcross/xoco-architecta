@@ -1,0 +1,61 @@
+---
+import SubscribeForm from "@/components/SubscribeForm.astro";
+import { siteConfig } from "@/config/site";
+
+/**
+ * Full-width ink band that closes a page. Sits inside the page frame so the
+ * paper edge stays visible around it.
+ *
+ * When it is the last thing in `<main>`, `data-subscribe-band` lets the page
+ * fuse it with the footer into a single ink block (see "Page close" in
+ * global.css) instead of stacking two identical cards.
+ */
+interface Props {
+  title?: string;
+  description?: string;
+  id?: string;
+}
+
+const {
+  title = siteConfig.newsletter.title,
+  description = siteConfig.newsletter.description,
+  id = "newsletter",
+} = Astro.props;
+---
+
+<section class="frame" id={id} data-subscribe-band>
+  <div class="frame-block subscribe-band">
+    <div class="container subscribe-band__inner">
+      <h2 class="txt-h1 subscribe-band__title">{title}</h2>
+      <p class="txt-m txt-dim subscribe-band__description">{description}</p>
+      <SubscribeForm id={`${id}-email`} onDark align="center" />
+    </div>
+  </div>
+</section>
+
+<style>
+  .subscribe-band__inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-block: clamp(3rem, 7vw, 5rem);
+    text-align: center;
+  }
+
+  .subscribe-band__title {
+    max-width: 44rem;
+  }
+
+  .subscribe-band__description {
+    max-width: 32rem;
+    margin-top: 1rem;
+    color: var(--ink-muted);
+  }
+
+  /* `:global` is required: the form is rendered by SubscribeForm, so it never
+     receives this component's scoping attribute. The local parent keeps the
+     rule from leaking to other subscribe forms. */
+  .subscribe-band__inner :global(.subscribe-form) {
+    margin-top: 2.25rem;
+  }
+</style>

@@ -1,0 +1,147 @@
+---
+import { Image } from "astro:assets";
+import CategoryTag from "@/components/CategoryTag.astro";
+import PostMeta from "@/components/ui/PostMeta.astro";
+import { postHref, type Post } from "@/lib/posts";
+
+interface Props {
+  posts: Post[];
+  /** Autoplay interval in ms; the progress ticks are timed to match. */
+  duration?: number;
+}
+
+const { posts, duration = 7000 } = Astro.props;
+const slides = posts.slice(0, 4);
+---
+
+{
+  slides.length > 0 && (
+    <section
+      class="hero"
+      aria-roledescription="carousel"
+      aria-label="Featured stories"
+      data-hero
+      style={`--hero-duration:${duration}ms`}
+    >
+      {slides.map((post, index) => (
+        <div class:list={["hero__media", index === 0 && "is-active"]} data-hero-media>
+          <Image
+            src={post.data.cover.src}
+            alt=""
+            widths={[720, 1080, 1440, 1920, 2400]}
+            sizes="100vw"
+            loading={index === 0 ? "eager" : "lazy"}
+            fetchpriority={index === 0 ? "high" : "auto"}
+            decoding="async"
+          />
+        </div>
+      ))}
+
+      <div class="hero__ui">
+        <div class="hero__stage">
+          {slides.map((post, index) => (
+            <article
+              class:list={["hero__panel", index === 0 && "is-active"]}
+              data-hero-panel
+              inert={index !== 0}
+            >
+              <CategoryTag category={post.data.category} />
+              <h2 class="txt-h1 hero__title">
+                <a href={postHref(post)}>{post.data.title}</a>
+              </h2>
+              <p class="txt-m hero__excerpt line-clamp-2">{post.data.excerpt}</p>
+              <PostMeta post={post} onDark showReadTime />
+            </article>
+          ))}
+        </div>
+
+        {/*
+         * The ticks are the only slideshow control: each one is a button that
+         * jumps to its slide, and the active tick fills over the autoplay
+         * interval. The visible mark is 2px wide but the button around it is a
+         * full-size target, so it stays usable on a phone.
+         */}
+        {slides.length > 1 && (
+          <div class="hero__progress" data-hero-progress>
+            {slides.map((post, index) => (
+              <button
+                type="button"
+                class:list={["hero__progress-item", index === 0 && "is-active"]}
+                data-hero-go={index}
+                aria-current={index === 0 ? "true" : undefined}
+              >
+                <span class="sr-only">{`Show story ${index + 1}: ${post.data.title}`}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  )
+}
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-hero]").forEach((hero) => {
+    const media = Array.from(hero.querySelectorAll<HTMLElement>("[data-hero-media]"));
+    const panels = Array.from(hero.querySelectorAll<HTMLElement>("[data-hero-panel]"));
+    const bars = Array.from(hero.querySelectorAll<HTMLButtonElement>("[data-hero-go]"));
+    if (panels.length < 2) return;
+
+    const durationValue = getComputedStyle(hero).getPropertyValue("--hero-duration").trim();
+    const duration = durationValue.endsWith("ms")
+      ? Number.parseFloat(durationValue)
+      : Number.parseFloat(durationValue) * 1000;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    let index = 0;
+    let timer = 0;
+
+    const show = (next: number) => {
+      index = (next + panels.length) % panels.length;
+
+      media.forEach((item, i) => item.classList.toggle("is-active", i === index));
+      panels.forEach((panel, i) => {
+        const active = i === index;
+        panel.classList.toggle("is-active", active);
+        // `inert` takes the whole slide out of the tab order and the
+        // accessibility tree, so no per-link tabindex bookkeeping is needed.
+        panel.inert = !active;
+      });
+      bars.forEach((bar, i) => {
+        // Restart the CSS animation on the newly active tick.
+        bar.classList.remove("is-active", "is-done");
+        void bar.offsetWidth;
+        if (i < index) bar.classList.add("is-done");
+        if (i === index) bar.classList.add("is-active");
+        if (i === index) bar.setAttribute("aria-current", "true");
+        else bar.removeAttribute("aria-current");
+      });
+    };
+
+    const play = () => {
+      if (reduceMotion) return;
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        show(index + 1);
+        play();
+      }, duration || 7000);
+    };
+
+    bars.forEach((bar, i) => {
+      bar.addEventListener("click", () => {
+        show(i);
+        play();
+      });
+    });
+
+    hero.addEventListener("mouseenter", () => window.clearTimeout(timer));
+    hero.addEventListener("mouseleave", play);
+    hero.addEventListener("focusin", () => window.clearTimeout(timer));
+    hero.addEventListener("focusout", (event) => {
+      if (!hero.contains(event.relatedTarget as Node)) play();
+    });
+
+    show(0);
+    play();
+  });
+</script>

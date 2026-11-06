@@ -1,0 +1,48 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import SwapText from "@/components/ui/SwapText.astro";
+
+/**
+ * A full-bleed ink band carrying a single sentence — the journal's position,
+ * set large. Use it once per page at most; it works because nothing else on
+ * the front page is this loud.
+ */
+interface Props {
+  statement: string;
+  attribution?: string;
+  href?: string;
+  linkLabel?: string;
+  id?: string;
+}
+
+const {
+  statement,
+  attribution,
+  href,
+  linkLabel = "About the journal",
+  id = "statement",
+} = Astro.props;
+---
+
+<section class="frame" aria-label="Editorial position" id={id}>
+  <div class="frame-block">
+    <div class="container statement__inner">
+      <blockquote class="statement__quote">{statement}</blockquote>
+      {attribution && <p class="txt-sub statement__attribution">{attribution}</p>}
+      {
+        href && (
+          <a class="btn btn--lg btn--onDark statement__link" href={href}>
+            <SwapText text={linkLabel} />
+            <Icon name="arrow-right" size={14} />
+          </a>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .statement__link {
+    justify-self: start;
+  }
+</style>

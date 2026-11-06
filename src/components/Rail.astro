@@ -1,0 +1,81 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+
+/**
+ * Horizontal scroll-snap rail. Below the large breakpoint the track scrolls
+ * with paging buttons; at large sizes it collapses into a plain grid with
+ * `columns` tracks, so no carousel library is needed.
+ */
+interface Props {
+  label: string;
+  columns?: number;
+  itemWidth?: string;
+  itemWidthSm?: string;
+  /** Keep paging horizontally at large sizes instead of collapsing to a grid. */
+  scroll?: boolean;
+  itemWidthLg?: string;
+  class?: string;
+}
+
+const {
+  label,
+  columns = 3,
+  itemWidth = "82%",
+  itemWidthSm = "48%",
+  scroll = false,
+  itemWidthLg = "48%",
+  class: className = "",
+} = Astro.props;
+
+const style = [
+  `--rail-item:${itemWidth}`,
+  `--rail-item-sm:${itemWidthSm}`,
+  `--rail-item-lg:${itemWidthLg}`,
+  `--rail-columns:repeat(${columns},minmax(0,1fr))`,
+].join(";");
+---
+
+<div class:list={["rail", scroll && "rail--scroll", className]} data-rail>
+  <div class="rail__track" style={style} role="group" aria-label={label} tabindex="0" data-rail-track>
+    <slot />
+  </div>
+  <button
+    type="button"
+    class="icon-btn rail__nav rail__nav--prev"
+    data-rail-prev
+    aria-label={`Scroll ${label} backwards`}
+  >
+    <Icon name="arrow-left" />
+  </button>
+  <button
+    type="button"
+    class="icon-btn rail__nav rail__nav--next"
+    data-rail-next
+    aria-label={`Scroll ${label} forwards`}
+  >
+    <Icon name="arrow-right" />
+  </button>
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>("[data-rail]").forEach((rail) => {
+    const track = rail.querySelector<HTMLElement>("[data-rail-track]");
+    const prev = rail.querySelector<HTMLButtonElement>("[data-rail-prev]");
+    const next = rail.querySelector<HTMLButtonElement>("[data-rail-next]");
+    if (!track || !prev || !next) return;
+
+    const page = () => track.clientWidth * 0.8;
+
+    const sync = () => {
+      const scrollable = track.scrollWidth - track.clientWidth > 4;
+      prev.disabled = !scrollable || track.scrollLeft <= 4;
+      next.disabled = !scrollable || track.scrollLeft >= track.scrollWidth - track.clientWidth - 4;
+    };
+
+    prev.addEventListener("click", () => track.scrollBy({ left: -page(), behavior: "smooth" }));
+    next.addEventListener("click", () => track.scrollBy({ left: page(), behavior: "smooth" }));
+    track.addEventListener("scroll", sync, { passive: true });
+    window.addEventListener("resize", sync, { passive: true });
+    sync();
+  });
+</script>

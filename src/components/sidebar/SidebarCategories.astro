@@ -1,0 +1,94 @@
+---
+import { categories, categorySlug, type Category, type Post } from "@/lib/posts";
+
+/**
+ * The rest of the sections, each with a live post count — the sideways move for
+ * a reader who has reached the end of one category. Sections with nothing
+ * published in them are left out rather than linking to an empty archive.
+ */
+interface Props {
+  title: string;
+  /** The archive the counts are taken from, drafts already filtered out. */
+  posts: Post[];
+  /** The section being read, which is left off the list. */
+  current?: Category;
+  id?: string;
+}
+
+const { title, posts, current, id = "sidebar-categories-title" } = Astro.props;
+
+const counts = posts.reduce((totals, post) => {
+  totals.set(post.data.category, (totals.get(post.data.category) ?? 0) + 1);
+  return totals;
+}, new Map<Category, number>());
+
+const list = categories
+  .filter((category) => category !== current)
+  .map((category) => ({ category, count: counts.get(category) ?? 0 }))
+  .filter((entry) => entry.count > 0);
+---
+
+{
+  list.length > 0 && (
+    <nav class="panel sidebar-sections" aria-labelledby={id}>
+      <h2 id={id} class="txt-h5">
+        {title}
+      </h2>
+      <ul class="sidebar-sections__list hover-fade-group">
+        {list.map(({ category, count }) => (
+          <li class="sidebar-sections__row">
+            <a class="sidebar-sections__link" href={`/category/${categorySlug(category)}/`}>
+              <span class="txt-sub sidebar-sections__name">{category}</span>
+              <span class="txt-cap txt-dim">
+                {count} {count === 1 ? "post" : "posts"}
+              </span>
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+<style>
+  .sidebar-sections {
+    display: grid;
+    gap: 1rem;
+    padding: 1.25rem;
+  }
+
+  .sidebar-sections__list {
+    display: grid;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .sidebar-sections__row {
+    border-top: 1px solid var(--border);
+  }
+
+  .sidebar-sections__row:first-child {
+    border-top: 0;
+  }
+
+  .sidebar-sections__link {
+    display: flex;
+    gap: 0.75rem;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-block: 0.7rem;
+  }
+
+  .sidebar-sections__row:first-child .sidebar-sections__link {
+    padding-top: 0.2rem;
+  }
+
+  .sidebar-sections__name {
+    transition: color 0.25s ease;
+  }
+
+  .sidebar-sections__link:hover .sidebar-sections__name {
+    color: var(--accent);
+  }
+</style>

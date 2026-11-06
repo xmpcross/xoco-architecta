@@ -1,0 +1,30 @@
+---
+import Icon from "@/components/ui/Icon.astro";
+import SwapText from "@/components/ui/SwapText.astro";
+
+interface Props {
+  title: string;
+  href?: string;
+  linkLabel?: string;
+  id?: string;
+  class?: string;
+}
+
+const { title, href, linkLabel = "View all", id, class: className = "" } = Astro.props;
+---
+
+<div class:list={["section-head", className]} id={id}>
+  <div class="section-head__meta">
+    <h2 class="txt-h2">{title}</h2>
+  </div>
+  {
+    href && (
+      <a class="section-link txt-mono" href={href}>
+        <SwapText text={linkLabel} />
+        <span class="section-link__arrow">
+          <Icon name="arrow-right" size={14} />
+        </span>
+      </a>
+    )
+  }
+</div>
